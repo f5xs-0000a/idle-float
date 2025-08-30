@@ -77,7 +77,9 @@ impl<F: Float> One for IdleFloat<F> {
     }
 
     fn is_one(&self) -> bool {
-        self.exponent.is_infinite() && self.exponent.is_sign_negative()
+        !self.base.is_nan()
+            && F::zero() < self.base
+            && self.exponent == F::zero()
     }
 }
 
