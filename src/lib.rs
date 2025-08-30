@@ -507,7 +507,7 @@ impl<F: Float> IdleFloat<F> {
     /// Creates a new IdleFloat with the given base and exponent.
     ///
     /// TODO: Add validation for edge cases (negative bases, invalid values, etc.)
-    pub fn new(
+    pub const fn new(
         base: F,
         exponent: F,
     ) -> Self {
@@ -520,7 +520,7 @@ impl<F: Float> IdleFloat<F> {
     /// Changes the base of this number.
     ///
     /// Read the section about coercion for the warning about changing bases.
-    fn change_base(&self) -> IdleFloat<F> {
+    const fn change_base(&self) -> IdleFloat<F> {
         unimplemented!()
     }
 }
