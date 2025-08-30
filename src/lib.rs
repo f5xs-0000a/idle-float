@@ -1,4 +1,17 @@
-use num::{Float, ToPrimitive};
+#[cfg(test)]
+mod tests;
+
+use core::cmp::Ordering::{
+    self,
+    *,
+};
+
+use num::{
+    Float,
+    One,
+    ToPrimitive,
+    Zero,
+};
 
 /// An implementation of a floating type number designed for incremental games.
 ///
@@ -23,12 +36,12 @@ use num::{Float, ToPrimitive};
 /// By default, the base is set to `e`, as it is when evaluating `zero()` or
 /// `one()`.
 #[derive(Debug, Clone, Copy)]
-struct IdleFloat<F: Float> {
-    base: F,
-    exponent: F,
+pub struct IdleFloat<F: Float> {
+    pub(crate) base: F,
+    pub(crate) exponent: F,
 }
 
-impl<F: Float> num::Zero for IdleFloat<F> {
+impl<F: Float> Zero for IdleFloat<F> {
     fn zero() -> Self {
         IdleFloat {
             base: F::one().exp(),
@@ -37,14 +50,14 @@ impl<F: Float> num::Zero for IdleFloat<F> {
     }
 
     fn is_zero(&self) -> bool {
-        !self.base.is_nan() &&
-            F::one() < self.base &&
-            self.exponent.is_infinite() &&
-            self.exponent.is_sign_negative()
+        !self.base.is_nan()
+            && F::one() < self.base
+            && self.exponent.is_infinite()
+            && self.exponent.is_sign_negative()
     }
 }
 
-impl<F: Float> num::One for IdleFloat<F> {
+impl<F: Float> One for IdleFloat<F> {
     fn one() -> Self {
         IdleFloat {
             base: F::one().exp(),
@@ -57,21 +70,85 @@ impl<F: Float> num::One for IdleFloat<F> {
     }
 }
 
+/// Checks if two `IdleFloat`s are equal in value.
+///
+/// If the bases are different, this method assumes both to be unequal.
 impl<F: Float> PartialEq for IdleFloat<F> {
-    fn eq(&self, _other: &Self) -> bool {
-        unimplemented!()
+    fn eq(
+        &self,
+        other: &Self,
+    ) -> bool {
+        if self.is_nan() || other.is_nan() {
+            return false;
+        }
+
+        if self.is_zero() && other.is_zero() {
+            return true;
+        }
+
+        if self.is_one() && other.is_one() {
+            return true;
+        }
+
+        self.base == other.base && self.exponent == other.exponent
     }
 }
 
+/// Checks for ordering between two `IdleFloat`s.
 impl<F: Float> PartialOrd for IdleFloat<F> {
-    fn partial_cmp(&self, _other: &Self) -> Option<std::cmp::Ordering> {
-        unimplemented!()
+    fn partial_cmp(
+        &self,
+        other: &Self,
+    ) -> Option<Ordering> {
+        if self.is_nan() || other.is_nan() {
+            return None;
+        }
+
+        let self_zero = self.is_zero();
+        let other_zero = other.is_zero();
+
+        match (self_zero, other_zero) {
+            (true, true) => return Some(Equal),
+            (true, false) => return Some(Less),
+            (false, true) => return Some(Greater),
+            _ => {},
+        }
+
+        if self.is_one() && other.is_one() {
+            return Some(Equal);
+        }
+
+        // code usually returns here
+        if self.base == other.base {
+            return self.exponent.partial_cmp(&other.exponent);
+        }
+
+        // rare case when bases are different
+        match (
+            self.exponent.is_infinite() && self.exponent.is_sign_positive(),
+            other.exponent.is_infinite() && self.exponent.is_sign_positive(),
+        ) {
+            // if both exponents are positive infinite, compare bases
+            (true, true) => self.base.partial_cmp(&other.base),
+
+            // if only one is infinite, that which is infinite is greater
+            (true, false) => Some(Greater),
+            (false, true) => Some(Less),
+
+            // if neither are infinite, compute log values
+            (false, false) => {
+                let self_log_value = self.exponent * self.base.ln();
+                let other_log_value = other.exponent * other.base.ln();
+                self_log_value.partial_cmp(&other_log_value)
+            },
+        }
     }
 }
 
 impl<F: Float> std::ops::Neg for IdleFloat<F> {
     type Output = Self;
 
+    /// Returns `NaN` since `IdleFloat`s do not represent negative numbers.
     fn neg(self) -> Self::Output {
         Self::nan()
     }
@@ -80,16 +157,21 @@ impl<F: Float> std::ops::Neg for IdleFloat<F> {
 impl<F: Float> num::Num for IdleFloat<F> {
     type FromStrRadixErr = ();
 
-    fn from_str_radix(_str: &str, _radix: u32) -> Result<Self, Self::FromStrRadixErr> {
+    fn from_str_radix(
+        _str: &str,
+        _radix: u32,
+    ) -> Result<Self, Self::FromStrRadixErr> {
         unimplemented!()
     }
 }
 
-
 impl<F: Float> std::ops::Add<IdleFloat<F>> for IdleFloat<F> {
     type Output = IdleFloat<F>;
 
-    fn add(self, _rhs: IdleFloat<F>) -> Self::Output {
+    fn add(
+        self,
+        _rhs: IdleFloat<F>,
+    ) -> Self::Output {
         unimplemented!()
     }
 }
@@ -97,7 +179,10 @@ impl<F: Float> std::ops::Add<IdleFloat<F>> for IdleFloat<F> {
 impl<F: Float> std::ops::Sub<IdleFloat<F>> for IdleFloat<F> {
     type Output = IdleFloat<F>;
 
-    fn sub(self, _rhs: IdleFloat<F>) -> Self::Output {
+    fn sub(
+        self,
+        _rhs: IdleFloat<F>,
+    ) -> Self::Output {
         unimplemented!()
     }
 }
@@ -105,7 +190,10 @@ impl<F: Float> std::ops::Sub<IdleFloat<F>> for IdleFloat<F> {
 impl<F: Float> std::ops::Mul<IdleFloat<F>> for IdleFloat<F> {
     type Output = IdleFloat<F>;
 
-    fn mul(self, _rhs: IdleFloat<F>) -> Self::Output {
+    fn mul(
+        self,
+        _rhs: IdleFloat<F>,
+    ) -> Self::Output {
         unimplemented!()
     }
 }
@@ -113,7 +201,10 @@ impl<F: Float> std::ops::Mul<IdleFloat<F>> for IdleFloat<F> {
 impl<F: Float> std::ops::Div<IdleFloat<F>> for IdleFloat<F> {
     type Output = IdleFloat<F>;
 
-    fn div(self, _rhs: IdleFloat<F>) -> Self::Output {
+    fn div(
+        self,
+        _rhs: IdleFloat<F>,
+    ) -> Self::Output {
         unimplemented!()
     }
 }
@@ -121,7 +212,10 @@ impl<F: Float> std::ops::Div<IdleFloat<F>> for IdleFloat<F> {
 impl<F: Float> std::ops::Rem<IdleFloat<F>> for IdleFloat<F> {
     type Output = IdleFloat<F>;
 
-    fn rem(self, _rhs: IdleFloat<F>) -> Self::Output {
+    fn rem(
+        self,
+        _rhs: IdleFloat<F>,
+    ) -> Self::Output {
         unimplemented!()
     }
 }
@@ -159,7 +253,9 @@ impl<F: Float> num::Float for IdleFloat<F> {
     }
 
     fn is_nan(self) -> bool {
-        unimplemented!()
+        // TODO: Add more cases for when IdleFloat should be considered NaN
+        // (e.g., invalid base/exponent combinations, mathematical inconsistencies)
+        self.base.is_nan() || self.exponent.is_nan()
     }
 
     fn is_infinite(self) -> bool {
@@ -214,7 +310,11 @@ impl<F: Float> num::Float for IdleFloat<F> {
         unimplemented!()
     }
 
-    fn mul_add(self, _a: Self, _b: Self) -> Self {
+    fn mul_add(
+        self,
+        _a: Self,
+        _b: Self,
+    ) -> Self {
         unimplemented!()
     }
 
@@ -222,11 +322,17 @@ impl<F: Float> num::Float for IdleFloat<F> {
         unimplemented!()
     }
 
-    fn powi(self, _n: i32) -> Self {
+    fn powi(
+        self,
+        _n: i32,
+    ) -> Self {
         unimplemented!()
     }
 
-    fn powf(self, _n: Self) -> Self {
+    fn powf(
+        self,
+        _n: Self,
+    ) -> Self {
         unimplemented!()
     }
 
@@ -246,7 +352,10 @@ impl<F: Float> num::Float for IdleFloat<F> {
         unimplemented!()
     }
 
-    fn log(self, _base: Self) -> Self {
+    fn log(
+        self,
+        _base: Self,
+    ) -> Self {
         unimplemented!()
     }
 
@@ -258,15 +367,24 @@ impl<F: Float> num::Float for IdleFloat<F> {
         unimplemented!()
     }
 
-    fn max(self, _other: Self) -> Self {
+    fn max(
+        self,
+        _other: Self,
+    ) -> Self {
         unimplemented!()
     }
 
-    fn min(self, _other: Self) -> Self {
+    fn min(
+        self,
+        _other: Self,
+    ) -> Self {
         unimplemented!()
     }
 
-    fn abs_sub(self, _other: Self) -> Self {
+    fn abs_sub(
+        self,
+        _other: Self,
+    ) -> Self {
         unimplemented!()
     }
 
@@ -274,7 +392,10 @@ impl<F: Float> num::Float for IdleFloat<F> {
         unimplemented!()
     }
 
-    fn hypot(self, _other: Self) -> Self {
+    fn hypot(
+        self,
+        _other: Self,
+    ) -> Self {
         unimplemented!()
     }
 
@@ -302,7 +423,10 @@ impl<F: Float> num::Float for IdleFloat<F> {
         unimplemented!()
     }
 
-    fn atan2(self, _other: Self) -> Self {
+    fn atan2(
+        self,
+        _other: Self,
+    ) -> Self {
         unimplemented!()
     }
 
@@ -380,6 +504,19 @@ impl<F: Float> num::NumCast for IdleFloat<F> {
 }
 
 impl<F: Float> IdleFloat<F> {
+    /// Creates a new IdleFloat with the given base and exponent.
+    ///
+    /// TODO: Add validation for edge cases (negative bases, invalid values, etc.)
+    pub fn new(
+        base: F,
+        exponent: F,
+    ) -> Self {
+        IdleFloat {
+            base,
+            exponent,
+        }
+    }
+
     /// Changes the base of this number.
     ///
     /// Read the section about coercion for the warning about changing bases.
