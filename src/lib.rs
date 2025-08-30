@@ -286,9 +286,42 @@ impl<F: Float> Mul<IdleFloat<F>> for IdleFloat<F> {
 
     fn mul(
         self,
-        _rhs: IdleFloat<F>,
+        rhs: IdleFloat<F>,
     ) -> Self::Output {
-        unimplemented!()
+        if self.is_nan() || rhs.is_nan() {
+            return Self::nan();
+        }
+
+        // 0 * x = 0
+        if self.is_zero() || rhs.is_zero() {
+            return IdleFloat {
+                base: self.base.max(rhs.base),
+                exponent: F::neg_infinity(),
+            };
+        }
+
+        // 1 * x = x, x * 1 = x
+        if self.is_one() {
+            return rhs;
+        }
+
+        if rhs.is_one() {
+            return self;
+        }
+
+        // coerce bases to equalize first
+        match self.base.partial_cmp(&rhs.base) {
+            Some(Equal) => {}, // pass-through
+            Some(Less) => return self.change_base(rhs.base).mul(rhs),
+            Some(Greater) => return self.mul(rhs.change_base(self.base)),
+            None => return Self::nan(),
+        }
+
+        // base^a * base^b = base^(a+b)
+        IdleFloat {
+            base: self.base,
+            exponent: self.exponent + rhs.exponent,
+        }
     }
 }
 
@@ -297,9 +330,43 @@ impl<F: Float> Div<IdleFloat<F>> for IdleFloat<F> {
 
     fn div(
         self,
-        _rhs: IdleFloat<F>,
+        rhs: IdleFloat<F>,
     ) -> Self::Output {
-        unimplemented!()
+        if self.is_nan() || rhs.is_nan() {
+            return Self::nan();
+        }
+
+        // x / 0 = NaN
+        if rhs.is_zero() {
+            return Self::nan();
+        }
+
+        // 0 / x = 0 where x != NaN
+        if self.is_zero() {
+            return IdleFloat {
+                base: self.base.max(rhs.base),
+                exponent: F::neg_infinity(),
+            };
+        }
+
+        // x / 1 = x
+        if rhs.is_one() {
+            return self;
+        }
+
+        // coerce bases to equalize first
+        match self.base.partial_cmp(&rhs.base) {
+            Some(Equal) => {}, // pass-through
+            Some(Less) => return self.change_base(rhs.base).div(rhs),
+            Some(Greater) => return self.div(rhs.change_base(self.base)),
+            None => return Self::nan(),
+        }
+
+        // base^a / base^b = base^(a-b)
+        IdleFloat {
+            base: self.base,
+            exponent: self.exponent - rhs.exponent,
+        }
     }
 }
 

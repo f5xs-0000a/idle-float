@@ -788,3 +788,572 @@ fn test_sub_base_coercion() {
         "Subtraction resulting in negative should be NaN"
     );
 }
+
+#[test]
+fn test_mul_positive_values() {
+    // Test multiplication with positive values
+    // Using e as base for consistency (default base)
+    let base = std::f64::consts::E;
+    let epsilon = 1e-10;
+
+    // Create values: e^2 ≈ 7.389 and e^1.5 ≈ 4.482
+    let val1 = IdleFloat::new(base, 2.0); // e^2
+    let val2 = IdleFloat::new(base, 1.5); // e^1.5
+
+    // Expected result: e^2 * e^1.5 = e^(2+1.5) = e^3.5 ≈ 30.128
+    let result = val1 * val2;
+
+    // Check that the result has correct base and exponent
+    assert_eq!(result.base, base, "Result should maintain base");
+    assert!(
+        (result.exponent - 3.5).abs() < epsilon,
+        "Multiplication exponent should be sum: got {:.10}, expected 3.5",
+        result.exponent
+    );
+
+    // Check the actual mathematical value
+    let result_value = result.base.powf(result.exponent);
+    let expected_value = base.powf(2.0) * base.powf(1.5);
+
+    assert!(
+        (result_value - expected_value).abs() < epsilon,
+        "Multiplication result {:.10} should be close to expected {:.10}",
+        result_value,
+        expected_value
+    );
+
+    assert!(!result.is_zero(), "Result should not be zero");
+    assert!(!result.is_nan(), "Result should not be NaN");
+}
+
+#[test]
+fn test_mul_with_zero() {
+    // Test multiplication with zero
+    let base = std::f64::consts::E;
+    let zero: IdleFloat<f64> = IdleFloat::zero();
+    let number = IdleFloat::new(base, 5.0); // e^5
+
+    // Zero * number = zero
+    let result1 = zero * number;
+    assert!(result1.is_zero(), "Zero * number should be zero");
+
+    // Number * zero = zero
+    let result2 = number * zero;
+    assert!(result2.is_zero(), "Number * zero should be zero");
+
+    // Zero * zero = zero
+    let result3 = zero * zero;
+    assert!(result3.is_zero(), "Zero * zero should be zero");
+}
+
+#[test]
+fn test_mul_with_one() {
+    // Test multiplication with one
+    let base = std::f64::consts::E;
+    let one: IdleFloat<f64> = IdleFloat::one();
+    let number = IdleFloat::new(base, 3.0); // e^3
+
+    // One * number = number
+    let result1 = one * number;
+    assert_eq!(result1, number, "One * number should equal number");
+
+    // Number * one = number
+    let result2 = number * one;
+    assert_eq!(result2, number, "Number * one should equal number");
+
+    // One * one = one
+    let result3 = one * one;
+    assert_eq!(result3, one, "One * one should equal one");
+}
+
+#[test]
+fn test_mul_negative_exponents() {
+    // Test multiplication with negative exponents (fractional values)
+    let base = std::f64::consts::E;
+    let epsilon = 1e-10;
+
+    // e^(-2) ≈ 0.135 and e^(-1) ≈ 0.368
+    let val1 = IdleFloat::new(base, -2.0); // e^(-2)
+    let val2 = IdleFloat::new(base, -1.0); // e^(-1)
+
+    // Expected: e^(-2) * e^(-1) = e^(-3) ≈ 0.0498
+    let result = val1 * val2;
+
+    assert_eq!(result.base, base, "Result should maintain base");
+    assert!(
+        (result.exponent - (-3.0)).abs() < epsilon,
+        "Negative exponent multiplication: got {:.10}, expected -3.0",
+        result.exponent
+    );
+
+    let result_value = result.base.powf(result.exponent);
+    let expected_value = base.powf(-2.0) * base.powf(-1.0);
+
+    assert!(
+        (result_value - expected_value).abs() < epsilon,
+        "Multiplication with negative exponents: result {:.10} should be \
+         close to expected {:.10}",
+        result_value,
+        expected_value
+    );
+}
+
+#[test]
+fn test_mul_large_exponents() {
+    // Test multiplication with large exponents
+    let base = std::f64::consts::E;
+    let epsilon = 1e-10;
+
+    let big1 = IdleFloat::new(base, 100.0); // e^100
+    let big2 = IdleFloat::new(base, 50.0); // e^50
+
+    // Expected: e^100 * e^50 = e^150
+    let result = big1 * big2;
+
+    assert_eq!(result.base, base, "Result should maintain base");
+    assert!(
+        (result.exponent - 150.0).abs() < epsilon,
+        "Large exponent multiplication: got {:.10}, expected 150.0",
+        result.exponent
+    );
+
+    assert!(!result.is_zero(), "Result should not be zero");
+    assert!(!result.is_nan(), "Result should not be NaN");
+}
+
+#[test]
+fn test_mul_commutativity() {
+    // Test that multiplication is commutative: a * b = b * a
+    let base = std::f64::consts::E;
+    let epsilon = 1e-10;
+
+    let val_a = IdleFloat::new(base, 2.5);
+    let val_b = IdleFloat::new(base, 1.8);
+
+    let result1 = val_a * val_b;
+    let result2 = val_b * val_a;
+
+    assert_eq!(result1.base, result2.base, "Bases should be equal");
+    assert!(
+        (result1.exponent - result2.exponent).abs() < epsilon,
+        "Multiplication should be commutative"
+    );
+}
+
+#[test]
+fn test_mul_with_nan() {
+    // Test multiplication with NaN
+    let base = std::f64::consts::E;
+    let nan: IdleFloat<f64> = IdleFloat::nan();
+    let number = IdleFloat::new(base, 2.0);
+
+    // NaN * number = NaN
+    let result1 = nan * number;
+    assert!(result1.is_nan(), "NaN * number should be NaN");
+
+    // Number * NaN = NaN
+    let result2 = number * nan;
+    assert!(result2.is_nan(), "Number * NaN should be NaN");
+
+    // NaN * NaN = NaN
+    let result3 = nan * nan;
+    assert!(result3.is_nan(), "NaN * NaN should be NaN");
+}
+
+#[test]
+fn test_div_positive_values() {
+    // Test division with positive values
+    // Using e as base for consistency (default base)
+    let base = std::f64::consts::E;
+    let epsilon = 1e-10;
+
+    // Create values: e^6 ≈ 403.43 and e^2 ≈ 7.389
+    let val1 = IdleFloat::new(base, 6.0); // e^6
+    let val2 = IdleFloat::new(base, 2.0); // e^2
+
+    // Expected result: e^6 / e^2 = e^(6-2) = e^4 ≈ 54.598
+    let result = val1 / val2;
+
+    // Check that the result has correct base and exponent
+    assert_eq!(result.base, base, "Result should maintain base");
+    assert!(
+        (result.exponent - 4.0).abs() < epsilon,
+        "Division exponent should be difference: got {:.10}, expected 4.0",
+        result.exponent
+    );
+
+    // Check the actual mathematical value
+    let result_value = result.base.powf(result.exponent);
+    let expected_value = base.powf(6.0) / base.powf(2.0);
+
+    assert!(
+        (result_value - expected_value).abs() < epsilon,
+        "Division result {:.10} should be close to expected {:.10}",
+        result_value,
+        expected_value
+    );
+
+    assert!(!result.is_zero(), "Result should not be zero");
+    assert!(!result.is_nan(), "Result should not be NaN");
+}
+
+#[test]
+fn test_div_by_zero() {
+    // Test division by zero (should be NaN)
+    let base = std::f64::consts::E;
+    let zero: IdleFloat<f64> = IdleFloat::zero();
+    let number = IdleFloat::new(base, 5.0); // e^5
+
+    // Number / zero = NaN
+    let result = number / zero;
+    assert!(result.is_nan(), "Division by zero should be NaN");
+}
+
+#[test]
+fn test_div_zero_by_number() {
+    // Test zero divided by number (should be zero)
+    let base = std::f64::consts::E;
+    let zero: IdleFloat<f64> = IdleFloat::zero();
+    let number = IdleFloat::new(base, 3.0); // e^3
+
+    // Zero / number = zero
+    let result = zero / number;
+    assert!(result.is_zero(), "Zero divided by number should be zero");
+}
+
+#[test]
+fn test_div_by_one() {
+    // Test division by one (should return original value)
+    let base = std::f64::consts::E;
+    let one: IdleFloat<f64> = IdleFloat::one();
+    let number = IdleFloat::new(base, 4.0); // e^4
+
+    // Number / one = number
+    let result = number / one;
+    assert_eq!(result, number, "Number divided by one should equal number");
+}
+
+#[test]
+fn test_div_negative_exponents() {
+    // Test division with negative exponents
+    let base = std::f64::consts::E;
+    let epsilon = 1e-10;
+
+    // e^(-1) ≈ 0.368 and e^(-3) ≈ 0.0498
+    let val1 = IdleFloat::new(base, -1.0); // e^(-1)
+    let val2 = IdleFloat::new(base, -3.0); // e^(-3)
+
+    // Expected: e^(-1) / e^(-3) = e^(-1-(-3)) = e^2 ≈ 7.389
+    let result = val1 / val2;
+
+    assert_eq!(result.base, base, "Result should maintain base");
+    assert!(
+        (result.exponent - 2.0).abs() < epsilon,
+        "Negative exponent division: got {:.10}, expected 2.0",
+        result.exponent
+    );
+
+    let result_value = result.base.powf(result.exponent);
+    let expected_value = base.powf(-1.0) / base.powf(-3.0);
+
+    assert!(
+        (result_value - expected_value).abs() < epsilon,
+        "Division with negative exponents: result {:.10} should be close to \
+         expected {:.10}",
+        result_value,
+        expected_value
+    );
+}
+
+#[test]
+fn test_div_large_exponents() {
+    // Test division with large exponents
+    let base = std::f64::consts::E;
+    let epsilon = 1e-10;
+
+    let big1 = IdleFloat::new(base, 200.0); // e^200
+    let big2 = IdleFloat::new(base, 150.0); // e^150
+
+    // Expected: e^200 / e^150 = e^50
+    let result = big1 / big2;
+
+    assert_eq!(result.base, base, "Result should maintain base");
+    assert!(
+        (result.exponent - 50.0).abs() < epsilon,
+        "Large exponent division: got {:.10}, expected 50.0",
+        result.exponent
+    );
+
+    assert!(!result.is_zero(), "Result should not be zero");
+    assert!(!result.is_nan(), "Result should not be NaN");
+}
+
+#[test]
+fn test_div_same_values() {
+    // Test division of identical values: x / x = 1
+    let base = std::f64::consts::E;
+    let epsilon = 1e-10;
+
+    let value = IdleFloat::new(base, 5.5); // e^5.5
+
+    let result = value / value;
+
+    // Result should be one (exponent = 0)
+    assert_eq!(result.base, base, "Result should maintain base");
+    assert!(
+        result.exponent.abs() < epsilon,
+        "Same value divided by itself should have exponent 0 (i.e., equal 1)"
+    );
+
+    // Should also pass the is_one() test
+    assert!(result.is_one(), "x / x should equal one");
+}
+
+#[test]
+fn test_div_resulting_in_fraction() {
+    // Test division that results in a fraction (negative exponent)
+    let base = std::f64::consts::E;
+    let epsilon = 1e-10;
+
+    // e^2 ≈ 7.389 and e^5 ≈ 148.41
+    let smaller = IdleFloat::new(base, 2.0); // e^2
+    let larger = IdleFloat::new(base, 5.0); // e^5
+
+    // Expected: e^2 / e^5 = e^(2-5) = e^(-3) ≈ 0.0498
+    let result = smaller / larger;
+
+    assert_eq!(result.base, base, "Result should maintain base");
+    assert!(
+        (result.exponent - (-3.0)).abs() < epsilon,
+        "Division resulting in fraction: got {:.10}, expected -3.0",
+        result.exponent
+    );
+
+    let result_value = result.base.powf(result.exponent);
+    let expected_value = base.powf(2.0) / base.powf(5.0);
+
+    assert!(
+        (result_value - expected_value).abs() < epsilon,
+        "Division resulting in fraction: result {:.10} should be close to \
+         expected {:.10}",
+        result_value,
+        expected_value
+    );
+
+    assert!(!result.is_zero(), "Result should not be zero");
+    assert!(!result.is_nan(), "Result should not be NaN");
+    assert!(result_value < 1.0, "Result should be less than 1");
+}
+
+#[test]
+fn test_div_with_nan() {
+    // Test division with NaN
+    let base = std::f64::consts::E;
+    let nan: IdleFloat<f64> = IdleFloat::nan();
+    let number = IdleFloat::new(base, 2.0);
+
+    // NaN / number = NaN
+    let result1 = nan / number;
+    assert!(result1.is_nan(), "NaN / number should be NaN");
+
+    // Number / NaN = NaN
+    let result2 = number / nan;
+    assert!(result2.is_nan(), "Number / NaN should be NaN");
+
+    // NaN / NaN = NaN
+    let result3 = nan / nan;
+    assert!(result3.is_nan(), "NaN / NaN should be NaN");
+}
+
+#[test]
+fn test_mul_base_coercion() {
+    // Test multiplication with different bases - should coerce to larger base
+    let epsilon = 1e-10;
+
+    // Test case 1: base 2 vs base 3 (3 > 2, so result should have base 3)
+    let val_base2 = IdleFloat::new(2.0, 3.0); // 2^3 = 8
+    let val_base3 = IdleFloat::new(3.0, 2.0); // 3^2 = 9
+
+    let result = val_base2 * val_base3;
+
+    // Result should have base 3 (the larger base)
+    assert_eq!(result.base, 3.0, "Result should have the larger base (3.0)");
+
+    // Expected: 8 * 9 = 72, which should be 3^log_3(72)
+    let expected_value = 8.0 * 9.0;
+    let result_value = result.base.powf(result.exponent);
+
+    assert!(
+        (result_value - expected_value).abs() < epsilon,
+        "Multiplication with base coercion: result {:.10} should be close to \
+         expected {:.10}",
+        result_value,
+        expected_value
+    );
+
+    // Test case 2: base 10 vs base e (10 > e, so result should have base 10)
+    let val_base_e = IdleFloat::new(std::f64::consts::E, 2.0); // e^2 ≈ 7.389
+    let val_base_10 = IdleFloat::new(10.0, 1.0); // 10^1 = 10
+
+    let result2 = val_base_e * val_base_10;
+
+    // Result should have base 10 (the larger base)
+    assert_eq!(
+        result2.base, 10.0,
+        "Result should have the larger base (10.0)"
+    );
+
+    // Expected: e^2 * 10 ≈ 7.389 * 10 = 73.89
+    let expected_value2 = std::f64::consts::E.powf(2.0) * 10.0;
+    let result_value2 = result2.base.powf(result2.exponent);
+
+    assert!(
+        (result_value2 - expected_value2).abs() < epsilon,
+        "Multiplication with base coercion: result {:.10} should be close to \
+         expected {:.10}",
+        result_value2,
+        expected_value2
+    );
+
+    // Test case 3: Verify commutativity with base coercion
+    let result_commutative = val_base_10 * val_base_e;
+
+    assert_eq!(
+        result_commutative.base, 10.0,
+        "Commutative result should also have base 10.0"
+    );
+    assert!(
+        (result_commutative.exponent - result2.exponent).abs() < epsilon,
+        "Commutative multiplication should give same exponent"
+    );
+
+    // Test case 4: Different bases with larger exponents
+    let large_base2 = IdleFloat::new(2.0, 10.0); // 2^10 = 1024
+    let large_base5 = IdleFloat::new(5.0, 5.0); // 5^5 = 3125
+
+    let result3 = large_base2 * large_base5;
+
+    // Result should have base 5 (the larger base)
+    assert_eq!(
+        result3.base, 5.0,
+        "Result should have the larger base (5.0)"
+    );
+
+    // Expected: 1024 * 3125 = 3,200,000
+    let expected_value3 = 1024.0 * 3125.0;
+    let result_value3 = result3.base.powf(result3.exponent);
+
+    // Use larger epsilon for very large numbers due to floating point precision
+    let large_epsilon = 1e-5;
+    assert!(
+        (result_value3 - expected_value3).abs() < large_epsilon,
+        "Multiplication with base coercion for large numbers: result {:.10} \
+         should be close to expected {:.10}",
+        result_value3,
+        expected_value3
+    );
+}
+
+#[test]
+fn test_div_base_coercion() {
+    // Test division with different bases - should coerce to larger base
+    let epsilon = 1e-10;
+
+    // Test case 1: base 3 vs base 2 (3 > 2, so result should have base 3)
+    let val_base3 = IdleFloat::new(3.0, 4.0); // 3^4 = 81
+    let val_base2 = IdleFloat::new(2.0, 3.0); // 2^3 = 8
+
+    let result = val_base3 / val_base2;
+
+    // Result should have base 3 (the larger base)
+    assert_eq!(result.base, 3.0, "Result should have the larger base (3.0)");
+
+    // Expected: 81 / 8 = 10.125, which should be 3^log_3(10.125)
+    let expected_value = 81.0 / 8.0;
+    let result_value = result.base.powf(result.exponent);
+
+    assert!(
+        (result_value - expected_value).abs() < epsilon,
+        "Division with base coercion: result {:.10} should be close to \
+         expected {:.10}",
+        result_value,
+        expected_value
+    );
+
+    // Test case 2: base 10 vs base e (10 > e, so result should have base 10)
+    let val_base_10 = IdleFloat::new(10.0, 2.0); // 10^2 = 100
+    let val_base_e = IdleFloat::new(std::f64::consts::E, 3.0); // e^3 ≈ 20.086
+
+    let result2 = val_base_10 / val_base_e;
+
+    // Result should have base 10 (the larger base)
+    assert_eq!(
+        result2.base, 10.0,
+        "Result should have the larger base (10.0)"
+    );
+
+    // Expected: 100 / e^3 ≈ 100 / 20.086 ≈ 4.978
+    let expected_value2 = 100.0 / std::f64::consts::E.powf(3.0);
+    let result_value2 = result2.base.powf(result2.exponent);
+
+    assert!(
+        (result_value2 - expected_value2).abs() < epsilon,
+        "Division with base coercion: result {:.10} should be close to \
+         expected {:.10}",
+        result_value2,
+        expected_value2
+    );
+
+    // Test case 3: Different bases with larger exponents
+    let large_base5 = IdleFloat::new(5.0, 6.0); // 5^6 = 15,625
+    let large_base2 = IdleFloat::new(2.0, 10.0); // 2^10 = 1024
+
+    let result3 = large_base5 / large_base2;
+
+    // Result should have base 5 (the larger base)
+    assert_eq!(
+        result3.base, 5.0,
+        "Result should have the larger base (5.0)"
+    );
+
+    // Expected: 15,625 / 1024 ≈ 15.259
+    let expected_value3 = 15625.0 / 1024.0;
+    let result_value3 = result3.base.powf(result3.exponent);
+
+    assert!(
+        (result_value3 - expected_value3).abs() < epsilon,
+        "Division with base coercion for large numbers: result {:.10} should \
+         be close to expected {:.10}",
+        result_value3,
+        expected_value3
+    );
+
+    // Test case 4: Division that results in a fraction with base coercion
+    let small_base5 = IdleFloat::new(5.0, 2.0); // 5^2 = 25
+    let large_base2 = IdleFloat::new(2.0, 8.0); // 2^8 = 256
+
+    let result4 = small_base5 / large_base2;
+
+    // Result should have base 5 (the larger base)
+    assert_eq!(
+        result4.base, 5.0,
+        "Result should have the larger base (5.0)"
+    );
+
+    // Expected: 25 / 256 ≈ 0.0977
+    let expected_value4 = 25.0 / 256.0;
+    let result_value4 = result4.base.powf(result4.exponent);
+
+    assert!(
+        (result_value4 - expected_value4).abs() < epsilon,
+        "Division resulting in fraction with base coercion: result {:.10} \
+         should be close to expected {:.10}",
+        result_value4,
+        expected_value4
+    );
+
+    // The result should be less than 1 (fractional)
+    assert!(result_value4 < 1.0, "Result should be fractional (< 1)");
+    assert!(!result4.is_zero(), "Result should not be zero");
+    assert!(!result4.is_nan(), "Result should not be NaN");
+}
