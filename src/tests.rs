@@ -614,3 +614,177 @@ fn test_add_same_values() {
     assert!(!result.is_zero(), "Result should not be zero");
     assert!(!result.is_nan(), "Result should not be NaN");
 }
+
+#[test]
+fn test_add_base_coercion() {
+    // Test addition with different bases - should coerce to larger base
+    let epsilon = 1e-10;
+
+    // Test case 1: base 2 vs base 3 (3 > 2, so result should have base 3)
+    let val_base2 = IdleFloat::new(2.0, 3.0); // 2^3 = 8
+    let val_base3 = IdleFloat::new(3.0, 2.0); // 3^2 = 9
+
+    let result = val_base2 + val_base3;
+
+    // Result should have base 3 (the larger base)
+    assert_eq!(result.base, 3.0, "Result should have the larger base (3.0)");
+
+    // Expected: 8 + 9 = 17, which should be 3^ln_3(17)
+    let expected_value = 8.0 + 9.0;
+    let result_value = result.base.powf(result.exponent);
+
+    assert!(
+        (result_value - expected_value).abs() < epsilon,
+        "Addition with base coercion: result {:.10} should be close to \
+         expected {:.10}",
+        result_value,
+        expected_value
+    );
+
+    // Test case 2: base 10 vs base e (10 > e, so result should have base 10)
+    let val_base_e = IdleFloat::new(std::f64::consts::E, 2.0); // e^2 ≈ 7.389
+    let val_base_10 = IdleFloat::new(10.0, 1.0); // 10^1 = 10
+
+    let result2 = val_base_e + val_base_10;
+
+    // Result should have base 10 (the larger base)
+    assert_eq!(
+        result2.base, 10.0,
+        "Result should have the larger base (10.0)"
+    );
+
+    // Expected: e^2 + 10 ≈ 7.389 + 10 = 17.389
+    let expected_value2 = std::f64::consts::E.powf(2.0) + 10.0;
+    let result_value2 = result2.base.powf(result2.exponent);
+
+    assert!(
+        (result_value2 - expected_value2).abs() < epsilon,
+        "Addition with base coercion: result {:.10} should be close to \
+         expected {:.10}",
+        result_value2,
+        expected_value2
+    );
+
+    // Test case 3: Verify commutativity with base coercion
+    let result_commutative = val_base_10 + val_base_e;
+
+    assert_eq!(
+        result_commutative.base, 10.0,
+        "Commutative result should also have base 10.0"
+    );
+    assert!(
+        (result_commutative.exponent - result2.exponent).abs() < epsilon,
+        "Commutative addition should give same exponent"
+    );
+
+    // Test case 4: Different bases with larger exponents
+    let large_base2 = IdleFloat::new(2.0, 10.0); // 2^10 = 1024
+    let large_base5 = IdleFloat::new(5.0, 5.0); // 5^5 = 3125
+
+    let result3 = large_base2 + large_base5;
+
+    // Result should have base 5 (the larger base)
+    assert_eq!(
+        result3.base, 5.0,
+        "Result should have the larger base (5.0)"
+    );
+
+    // Expected: 1024 + 3125 = 4149
+    let expected_value3 = 1024.0 + 3125.0;
+    let result_value3 = result3.base.powf(result3.exponent);
+
+    assert!(
+        (result_value3 - expected_value3).abs() < epsilon,
+        "Addition with base coercion for large numbers: result {:.10} should \
+         be close to expected {:.10}",
+        result_value3,
+        expected_value3
+    );
+}
+
+#[test]
+fn test_sub_base_coercion() {
+    // Test subtraction with different bases - should coerce to larger base
+    let epsilon = 1e-10;
+
+    // Test case 1: base 3 vs base 2 (3 > 2, so result should have base 3)
+    let val_base3 = IdleFloat::new(3.0, 2.0); // 3^2 = 9
+    let val_base2 = IdleFloat::new(2.0, 3.0); // 2^3 = 8
+
+    let result = val_base3 - val_base2;
+
+    // Result should have base 3 (the larger base)
+    assert_eq!(result.base, 3.0, "Result should have the larger base (3.0)");
+
+    // Expected: 9 - 8 = 1, which should be 3^0 = 1
+    let expected_value = 9.0 - 8.0;
+    let result_value = result.base.powf(result.exponent);
+
+    assert!(
+        (result_value - expected_value).abs() < epsilon,
+        "Subtraction with base coercion: result {:.10} should be close to \
+         expected {:.10}",
+        result_value,
+        expected_value
+    );
+
+    // Test case 2: base 10 vs base e (10 > e, so result should have base 10)
+    let val_base_10 = IdleFloat::new(10.0, 1.5); // 10^1.5 ≈ 31.623
+    let val_base_e = IdleFloat::new(std::f64::consts::E, 2.0); // e^2 ≈ 7.389
+
+    let result2 = val_base_10 - val_base_e;
+
+    // Result should have base 10 (the larger base)
+    assert_eq!(
+        result2.base, 10.0,
+        "Result should have the larger base (10.0)"
+    );
+
+    // Expected: 10^1.5 - e^2 ≈ 31.623 - 7.389 = 24.234
+    let expected_value2 = 10.0_f64.powf(1.5) - std::f64::consts::E.powf(2.0);
+    let result_value2 = result2.base.powf(result2.exponent);
+
+    assert!(
+        (result_value2 - expected_value2).abs() < epsilon,
+        "Subtraction with base coercion: result {:.10} should be close to \
+         expected {:.10}",
+        result_value2,
+        expected_value2
+    );
+
+    // Test case 3: Different bases with larger exponents
+    let large_base5 = IdleFloat::new(5.0, 5.0); // 5^5 = 3125
+    let large_base2 = IdleFloat::new(2.0, 10.0); // 2^10 = 1024
+
+    let result3 = large_base5 - large_base2;
+
+    // Result should have base 5 (the larger base)
+    assert_eq!(
+        result3.base, 5.0,
+        "Result should have the larger base (5.0)"
+    );
+
+    // Expected: 3125 - 1024 = 2101
+    let expected_value3 = 3125.0 - 1024.0;
+    let result_value3 = result3.base.powf(result3.exponent);
+
+    assert!(
+        (result_value3 - expected_value3).abs() < epsilon,
+        "Subtraction with base coercion for large numbers: result {:.10} \
+         should be close to expected {:.10}",
+        result_value3,
+        expected_value3
+    );
+
+    // Test case 4: Subtraction that would result in negative (should be NaN)
+    let small_base5 = IdleFloat::new(5.0, 1.0); // 5^1 = 5
+    let large_base2 = IdleFloat::new(2.0, 10.0); // 2^10 = 1024
+
+    let result4 = small_base5 - large_base2;
+
+    // Since 5 - 1024 < 0, and IdleFloat cannot represent negative numbers, result should be NaN
+    assert!(
+        result4.is_nan(),
+        "Subtraction resulting in negative should be NaN"
+    );
+}

@@ -47,8 +47,8 @@ use num::{
 /// into implicit coercion of the base into the larger base. That means
 /// `f(a^b, c^d) = max(a, c)^F(b, d)`.
 ///
-/// It is highly advised to avoid implicit coercion at all costs by keeping the
-/// base as consistent as possible.
+/// It is highly advised to avoid implicit base coercion at all costs by keeping
+/// the base as consistent as possible.
 ///
 /// By default, the base is set to `e`, as it is when evaluating `zero()` or
 /// `one()`.
