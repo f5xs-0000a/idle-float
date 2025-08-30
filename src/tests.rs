@@ -419,3 +419,198 @@ fn test_sub_small_minus_big_gives_nan() {
         "Any subtraction resulting in negative should be NaN"
     );
 }
+
+#[test]
+fn test_add_positive_values_close_to_one() {
+    // Test addition with positive values close to 1
+    // Using e as base for consistency (default base)
+    let base = std::f64::consts::E;
+
+    // Create values close to 1: e^0.1 ≈ 1.105 and e^0.05 ≈ 1.051
+    let val1 = IdleFloat::new(base, 0.1); // e^0.1
+    let val2 = IdleFloat::new(base, 0.05); // e^0.05
+
+    // Expected result: e^0.1 + e^0.05 ≈ 1.105 + 1.051 = 2.156
+    // In IdleFloat form: e^ln(2.156) ≈ e^0.767
+    let result = val1 + val2;
+
+    // Since we're dealing with floating point arithmetic, we need an epsilon for comparison
+    let epsilon = 1e-10;
+
+    // Convert both values to f64 for easier comparison
+    // Expected: e^0.1 + e^0.05 ≈ 1.105 + 1.051 = 2.156
+    let expected_value = base.powf(0.1) + base.powf(0.05);
+    let expected = IdleFloat::new(base, expected_value.ln());
+
+    // Check that the result is close to expected within epsilon
+    // Since we can't directly compare IdleFloat values with epsilon,
+    // we'll compare the actual mathematical values they represent
+    let result_value = result.base.powf(result.exponent);
+    let expected_mathematical_value = expected_value;
+
+    assert!(
+        (result_value - expected_mathematical_value).abs() < epsilon,
+        "Addition result {:.10} should be close to expected {:.10} within \
+         epsilon {:.10}",
+        result_value,
+        expected_mathematical_value,
+        epsilon
+    );
+
+    // Also test that the result is positive and reasonable
+    assert!(!result.is_zero(), "Result should not be zero");
+    assert!(!result.is_nan(), "Result should not be NaN");
+    assert!(result_value > 0.0, "Result should be positive");
+    assert!(
+        result_value > 2.0,
+        "Result should be greater than 2 (since we added two values > 1)"
+    );
+}
+
+#[test]
+fn test_add_big_numbers() {
+    // Test addition with large numbers: e^100 + e^99
+    // This tests the LogSumExp implementation for large exponents
+    let base = std::f64::consts::E;
+    let epsilon = 1e-10;
+
+    let big1 = IdleFloat::new(base, 100.0); // e^100
+    let big2 = IdleFloat::new(base, 99.0); // e^99
+
+    // Expected: e^100 + e^99 = e^99 * (e + 1) ≈ e^99 * 3.718
+    // Result should be approximately e^(99 + ln(e+1)) = e^(99 + ln(3.718))
+    let result = big1 + big2;
+
+    // Mathematical verification: e^100 + e^99 = e^99 * (e + 1)
+    let e_plus_1 = base + 1.0;
+    let expected_exponent = 99.0 + e_plus_1.ln();
+    let expected = IdleFloat::new(base, expected_exponent);
+
+    // Compare the exponents since the numbers are too large for direct comparison
+    let result_exp = result.exponent;
+    let expected_exp = expected.exponent;
+
+    assert!(
+        (result_exp - expected_exp).abs() < epsilon,
+        "Big number addition result exponent {:.10} should be close to \
+         expected {:.10} within epsilon {:.10}",
+        result_exp,
+        expected_exp,
+        epsilon
+    );
+
+    assert!(!result.is_zero(), "Result should not be zero");
+    assert!(!result.is_nan(), "Result should not be NaN");
+}
+
+#[test]
+fn test_add_very_big_plus_very_small() {
+    // Test: very big number + very small number ≈ very big number
+    // e^1000 + e^(-10) should be approximately e^1000
+    let base = std::f64::consts::E;
+    let epsilon = 1e-10;
+
+    let very_big = IdleFloat::new(base, 1000.0); // e^1000
+    let very_small = IdleFloat::new(base, -10.0); // e^(-10)
+
+    let result = very_big + very_small;
+
+    // When adding a very small number to a very large number,
+    // the result should be approximately the large number
+    // Since e^1000 >> e^(-10), the result should be very close to e^1000
+
+    // The LogSumExp algorithm should handle this gracefully
+    // Expected: e^1000 * (1 + e^(-1010)) ≈ e^1000 (since e^(-1010) ≈ 0)
+    let expected_exponent = 1000.0 + (1.0 + (-1010.0_f64).exp()).ln();
+
+    // Since e^(-1010) is essentially 0, ln(1 + 0) = ln(1) = 0
+    // So expected_exponent should be very close to 1000.0
+    assert!(
+        (result.exponent - 1000.0).abs() < epsilon,
+        "Very big plus very small should be approximately the big number. Got \
+         exponent {:.10}, expected ~1000.0",
+        result.exponent
+    );
+
+    assert!(!result.is_zero(), "Result should not be zero");
+    assert!(!result.is_nan(), "Result should not be NaN");
+    assert!(result.exponent > 999.0, "Result should still be very large");
+}
+
+#[test]
+fn test_add_zero() {
+    // Test addition with zero
+    let base = std::f64::consts::E;
+    let zero: IdleFloat<f64> = IdleFloat::zero();
+    let number = IdleFloat::new(base, 5.0); // e^5
+
+    // Zero + number = number
+    let result1 = zero + number;
+    assert_eq!(result1, number, "Zero + number should equal number");
+
+    // Number + zero = number
+    let result2 = number + zero;
+    assert_eq!(result2, number, "Number + zero should equal number");
+
+    // Zero + zero = zero
+    let result3 = zero + zero;
+    assert_eq!(result3, zero, "Zero + zero should equal zero");
+}
+
+#[test]
+fn test_add_one() {
+    // Test addition with one
+    let base = std::f64::consts::E;
+    let one: IdleFloat<f64> = IdleFloat::one();
+    let number = IdleFloat::new(base, 2.0); // e^2 ≈ 7.389
+    let epsilon = 1e-10;
+
+    // One + number should be approximately number + 1
+    let result = one + number;
+
+    // Expected: 1 + e^2 ≈ 1 + 7.389 = 8.389
+    let expected_value = 1.0 + base.powf(2.0);
+    let result_value = result.base.powf(result.exponent);
+
+    assert!(
+        (result_value - expected_value).abs() < epsilon,
+        "One + number result {:.10} should be close to expected {:.10}",
+        result_value,
+        expected_value
+    );
+
+    assert!(!result.is_zero(), "Result should not be zero");
+    assert!(!result.is_nan(), "Result should not be NaN");
+}
+
+#[test]
+fn test_add_same_values() {
+    // Test addition of identical values: x + x = 2x
+    let base = std::f64::consts::E;
+    let value = IdleFloat::new(base, 3.0); // e^3 ≈ 20.086
+    let epsilon = 1e-10;
+
+    let result = value + value;
+
+    // Expected: e^3 + e^3 = 2 * e^3 = e^(ln(2) + 3)
+    let expected_value = 2.0 * base.powf(3.0);
+    let expected_exponent = 3.0 + 2.0_f64.ln();
+    let result_value = result.base.powf(result.exponent);
+
+    assert!(
+        (result_value - expected_value).abs() < epsilon,
+        "Same value + same value result {:.10} should be close to expected \
+         {:.10}",
+        result_value,
+        expected_value
+    );
+
+    // Also check the exponent calculation
+    assert!(
+        (result.exponent - expected_exponent).abs() < epsilon,
+        "Exponent should be close to ln(2) + original_exponent"
+    );
+
+    assert!(!result.is_zero(), "Result should not be zero");
+    assert!(!result.is_nan(), "Result should not be NaN");
+}

@@ -1,9 +1,17 @@
 #[cfg(test)]
 mod tests;
 
-use core::cmp::Ordering::{
-    self,
-    *,
+use core::{
+    cmp::Ordering::{
+        self,
+        *,
+    },
+    ops::{
+        Add,
+        Div,
+        Mul,
+        Sub,
+    },
 };
 
 use num::{
@@ -203,18 +211,46 @@ impl<F: Float> num::Num for IdleFloat<F> {
     }
 }
 
-impl<F: Float> std::ops::Add<IdleFloat<F>> for IdleFloat<F> {
+impl<F: Float> Add<IdleFloat<F>> for IdleFloat<F> {
     type Output = IdleFloat<F>;
 
     fn add(
         self,
-        _rhs: IdleFloat<F>,
+        rhs: IdleFloat<F>,
     ) -> Self::Output {
-        unimplemented!()
+        // special case: 0 + 0 = 0
+        if self.is_zero() && rhs.is_zero() {
+            return IdleFloat {
+                base: self.base.max(rhs.base),
+                exponent: F::neg_infinity(),
+            };
+        }
+
+        // coerce bases to equalize first
+        match self.base.partial_cmp(&rhs.base) {
+            Some(Equal) => {}, // pass-through,
+            Some(Less) => return self.change_base(rhs.base).add(rhs),
+            Some(Greater) => return self.add(rhs.change_base(self.base)),
+            None => return Self::nan(),
+        }
+
+        // perform LogSumExp
+        let base = self.base;
+        let max = self.exponent.max(rhs.exponent);
+        let self_exp_less = self.exponent - max;
+        let rhs_exp_less = rhs.exponent - max;
+
+        let se = base.powf(self_exp_less) + base.powf(rhs_exp_less);
+        let lse = se.log(base);
+
+        IdleFloat {
+            base,
+            exponent: lse + max,
+        }
     }
 }
 
-impl<F: Float> std::ops::Sub<IdleFloat<F>> for IdleFloat<F> {
+impl<F: Float> Sub<IdleFloat<F>> for IdleFloat<F> {
     type Output = IdleFloat<F>;
 
     fn sub(
@@ -245,7 +281,7 @@ impl<F: Float> std::ops::Sub<IdleFloat<F>> for IdleFloat<F> {
     }
 }
 
-impl<F: Float> std::ops::Mul<IdleFloat<F>> for IdleFloat<F> {
+impl<F: Float> Mul<IdleFloat<F>> for IdleFloat<F> {
     type Output = IdleFloat<F>;
 
     fn mul(
@@ -256,7 +292,7 @@ impl<F: Float> std::ops::Mul<IdleFloat<F>> for IdleFloat<F> {
     }
 }
 
-impl<F: Float> std::ops::Div<IdleFloat<F>> for IdleFloat<F> {
+impl<F: Float> Div<IdleFloat<F>> for IdleFloat<F> {
     type Output = IdleFloat<F>;
 
     fn div(
