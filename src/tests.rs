@@ -185,3 +185,79 @@ fn test_from_str_radix() {
     let expected_half = IdleFloat::new(std::f64::consts::E, 0.5_f64.ln());
     assert_eq!(half, expected_half);
 }
+
+#[test]
+fn test_is_zero_various_bases() {
+    // Standard zero should be recognized regardless of how it's created
+    let zero_standard: IdleFloat<f64> = IdleFloat::zero();
+    assert!(zero_standard.is_zero());
+
+    // Zero created with different bases should still be zero
+    let zero_base2 = IdleFloat::new(2.0, f64::NEG_INFINITY);
+    let zero_base3 = IdleFloat::new(3.0, f64::NEG_INFINITY);
+    let zero_base10 = IdleFloat::new(10.0, f64::NEG_INFINITY);
+
+    assert!(zero_base2.is_zero());
+    assert!(zero_base3.is_zero());
+    assert!(zero_base10.is_zero());
+
+    // All zeros should be equal to each other
+    assert_eq!(zero_standard, zero_base2);
+    assert_eq!(zero_standard, zero_base3);
+    assert_eq!(zero_standard, zero_base10);
+
+    // Non-zero values should not be zero
+    let non_zero = IdleFloat::new(2.0, 1.0);
+    assert!(!non_zero.is_zero());
+
+    // NaN should not be zero
+    let nan: IdleFloat<f64> = IdleFloat::nan();
+    assert!(!nan.is_zero());
+
+    // Base = 1 (invalid) should not be zero
+    let invalid_base = IdleFloat::new(1.0, f64::NEG_INFINITY);
+    assert!(!invalid_base.is_zero());
+
+    // Base < 1 should not be zero
+    let small_base = IdleFloat::new(0.5, f64::NEG_INFINITY);
+    assert!(!small_base.is_zero());
+}
+
+#[test]
+fn test_is_one_various_bases() {
+    // Standard one should be recognized
+    let one_standard: IdleFloat<f64> = IdleFloat::one();
+    assert!(one_standard.is_one());
+
+    // Only e^0 should be recognized as one
+    let one_base_e = IdleFloat::new(std::f64::consts::E, 0.0);
+    assert!(one_base_e.is_one());
+
+    // Different bases with exponent 0 should also be recognized as one
+    // since mathematically any positive base^0 = 1
+    let base2_exp0 = IdleFloat::new(2.0, 0.0); // 2^0 = 1 mathematically
+    let base3_exp0 = IdleFloat::new(3.0, 0.0); // 3^0 = 1 mathematically  
+    let base10_exp0 = IdleFloat::new(10.0, 0.0); // 10^0 = 1 mathematically
+
+    assert!(base2_exp0.is_one());
+    assert!(base3_exp0.is_one());
+    assert!(base10_exp0.is_one());
+
+    // Since all of these pass is_one() check, they should be equal due to the
+    // special case in PartialEq: if self.is_one() && other.is_one() => true
+    assert_eq!(one_standard, base2_exp0);
+    assert_eq!(one_standard, base3_exp0);
+    assert_eq!(one_standard, base10_exp0);
+
+    // Base e with non-zero exponent should not be one
+    let e_exp1 = IdleFloat::new(std::f64::consts::E, 1.0);
+    assert!(!e_exp1.is_one());
+
+    // NaN should not be one
+    let nan: IdleFloat<f64> = IdleFloat::nan();
+    assert!(!nan.is_one());
+
+    // Zero should not be one
+    let zero: IdleFloat<f64> = IdleFloat::zero();
+    assert!(!zero.is_one());
+}
