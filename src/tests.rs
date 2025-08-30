@@ -1357,3 +1357,292 @@ fn test_div_base_coercion() {
     assert!(!result4.is_zero(), "Result should not be zero");
     assert!(!result4.is_nan(), "Result should not be NaN");
 }
+
+#[test]
+fn test_infinity() {
+    // Test infinity creation and properties
+    let inf: IdleFloat<f64> = IdleFloat::infinity();
+    
+    // Infinity should have base e and infinite exponent
+    assert_eq!(inf.base, std::f64::consts::E, "Infinity should have base e");
+    assert!(inf.exponent.is_infinite() && inf.exponent.is_sign_positive(), "Infinity should have positive infinite exponent");
+    
+    // Classification should be Infinite
+    assert_eq!(inf.classify(), std::num::FpCategory::Infinite);
+}
+
+#[test]
+fn test_min_positive_value() {
+    // Test minimum positive value creation
+    let min_pos: IdleFloat<f64> = IdleFloat::min_positive_value();
+    
+    // Should have base slightly greater than 1 and very negative exponent
+    let expected_base = 1.0 + f64::MIN_POSITIVE;
+    assert!((min_pos.base - expected_base).abs() < 1e-100, "Min positive should have base = 1 + MIN_POSITIVE");
+    assert_eq!(min_pos.exponent, -f64::MAX, "Min positive should have most negative finite exponent");
+    
+    // Classification should be Normal
+    assert_eq!(min_pos.classify(), std::num::FpCategory::Normal);
+}
+
+#[test]
+fn test_max_value() {
+    // Test maximum value creation
+    let max_val: IdleFloat<f64> = IdleFloat::max_value();
+    
+    // Should have maximum finite values for both base and exponent
+    assert_eq!(max_val.base, f64::MAX, "Max value should have max finite base");
+    assert_eq!(max_val.exponent, f64::MAX, "Max value should have max finite exponent");
+    
+    // Classification should be Normal
+    assert_eq!(max_val.classify(), std::num::FpCategory::Normal);
+}
+
+#[test]
+fn test_classify() {
+    // Test classification of various values
+    let zero: IdleFloat<f64> = IdleFloat::zero();
+    let one: IdleFloat<f64> = IdleFloat::one();
+    let normal = IdleFloat::new(2.0, 3.0);
+    let nan: IdleFloat<f64> = IdleFloat::nan();
+    let inf: IdleFloat<f64> = IdleFloat::infinity();
+    
+    assert_eq!(zero.classify(), std::num::FpCategory::Zero);
+    assert_eq!(one.classify(), std::num::FpCategory::Normal);
+    assert_eq!(normal.classify(), std::num::FpCategory::Normal);
+    assert_eq!(nan.classify(), std::num::FpCategory::Nan);
+    assert_eq!(inf.classify(), std::num::FpCategory::Infinite);
+}
+
+#[test]
+fn test_recip() {
+    // Test reciprocal function
+    let epsilon = 1e-10;
+    let base = std::f64::consts::E;
+    
+    // Test reciprocal of a normal value: 1/(e^2) = e^(-2)
+    let val = IdleFloat::new(base, 2.0);
+    let recip_val = val.recip();
+    
+    assert_eq!(recip_val.base, base, "Reciprocal should maintain base");
+    assert!((recip_val.exponent - (-2.0)).abs() < epsilon, "Reciprocal should negate exponent");
+    
+    // Test mathematical correctness: val * recip_val = 1
+    let product = val * recip_val;
+    assert!(product.is_one(), "Value times its reciprocal should equal one");
+    
+    // Test reciprocal of zero should be infinity
+    let zero: IdleFloat<f64> = IdleFloat::zero();
+    let recip_zero = zero.recip();
+    assert_eq!(recip_zero.classify(), std::num::FpCategory::Infinite, "Reciprocal of zero should be infinity");
+    
+    // Test reciprocal of NaN should be NaN
+    let nan: IdleFloat<f64> = IdleFloat::nan();
+    let recip_nan = nan.recip();
+    assert!(recip_nan.is_nan(), "Reciprocal of NaN should be NaN");
+}
+
+#[test]
+fn test_sqrt() {
+    // Test square root function
+    let epsilon = 1e-10;
+    let base = std::f64::consts::E;
+    
+    // Test sqrt of e^4 = e^2
+    let val = IdleFloat::new(base, 4.0);
+    let sqrt_val = val.sqrt();
+    
+    assert_eq!(sqrt_val.base, base, "Square root should maintain base");
+    assert!((sqrt_val.exponent - 2.0).abs() < epsilon, "Square root should halve exponent");
+    
+    // Test mathematical correctness: sqrt_val^2 = val
+    let squared = sqrt_val * sqrt_val;
+    assert!((squared.exponent - val.exponent).abs() < epsilon, "Square of square root should equal original");
+    
+    // Test sqrt of zero should be zero
+    let zero: IdleFloat<f64> = IdleFloat::zero();
+    let sqrt_zero = zero.sqrt();
+    assert!(sqrt_zero.is_zero(), "Square root of zero should be zero");
+    
+    // Test sqrt of NaN should be NaN
+    let nan: IdleFloat<f64> = IdleFloat::nan();
+    let sqrt_nan = nan.sqrt();
+    assert!(sqrt_nan.is_nan(), "Square root of NaN should be NaN");
+}
+
+#[test]
+fn test_exp() {
+    // Test exponential function
+    let epsilon = 1e-10;
+    let base = std::f64::consts::E;
+    
+    // Test exp(0) = 1
+    let zero: IdleFloat<f64> = IdleFloat::zero();
+    let exp_zero = zero.exp();
+    assert!(exp_zero.is_one(), "exp(0) should equal 1");
+    
+    // Test exp of a small value
+    let small_val = IdleFloat::new(base, 1.0); // e^1 = e
+    let exp_small = small_val.exp(); // e^e
+    
+    assert_eq!(exp_small.base, base, "exp result should have base e");
+    assert!((exp_small.exponent - base).abs() < epsilon, "exp(e) should equal e^e");
+    
+    // Test exp of NaN should be NaN
+    let nan: IdleFloat<f64> = IdleFloat::nan();
+    let exp_nan = nan.exp();
+    assert!(exp_nan.is_nan(), "exp(NaN) should be NaN");
+}
+
+#[test]
+fn test_ln() {
+    // Test natural logarithm function
+    let epsilon = 1e-10;
+    let base = std::f64::consts::E;
+    
+    // Test ln(1) = 0
+    let one: IdleFloat<f64> = IdleFloat::one();
+    let ln_one = one.ln();
+    assert!(ln_one.is_zero(), "ln(1) should equal 0");
+    
+    // Test ln(e^2) = 2
+    let val = IdleFloat::new(base, 2.0);
+    let ln_val = val.ln();
+    
+    assert_eq!(ln_val.base, base, "ln result should have base e");
+    assert!((ln_val.exponent - 2.0).abs() < epsilon, "ln(e^2) should equal 2");
+    
+    // Test ln with different base: ln(2^3) = 3 * ln(2)
+    let val_base2 = IdleFloat::new(2.0, 3.0);
+    let ln_val_base2 = val_base2.ln();
+    let expected_exponent = 3.0 * 2.0_f64.ln();
+    
+    assert_eq!(ln_val_base2.base, base, "ln result should have base e");
+    assert!((ln_val_base2.exponent - expected_exponent).abs() < epsilon, 
+            "ln(2^3) should equal 3*ln(2)");
+    
+    // Test ln(0) should be NaN
+    let zero: IdleFloat<f64> = IdleFloat::zero();
+    let ln_zero = zero.ln();
+    assert!(ln_zero.is_nan(), "ln(0) should be NaN");
+    
+    // Test ln(NaN) should be NaN
+    let nan: IdleFloat<f64> = IdleFloat::nan();
+    let ln_nan = nan.ln();
+    assert!(ln_nan.is_nan(), "ln(NaN) should be NaN");
+}
+
+#[test]
+fn test_log() {
+    // Test logarithm with IdleFloat base
+    let epsilon = 1e-10;
+    
+    // Let me try a simpler case first: log_2(4) = 2 (since 2^2 = 4)
+    let val = IdleFloat::new(2.0, 2.0); // 2^2 = 4
+    let base = IdleFloat::new(2.0, 1.0); // 2^1 = 2
+    let log_result = val.log(base);
+    
+    let result_value = log_result.base.powf(log_result.exponent);
+    assert!((result_value - 2.0).abs() < epsilon, 
+            "log_2(4) should equal 2, got {}", result_value);
+    
+    // Test log_2(8) = 3 (since 2^3 = 8)
+    let val8 = IdleFloat::new(2.0, 3.0); // 2^3 = 8
+    let log_result8 = val8.log(base);
+    let result_value8 = log_result8.base.powf(log_result8.exponent);
+    assert!((result_value8 - 3.0).abs() < epsilon, 
+            "log_2(8) should equal 3, got {}", result_value8);
+    
+    // Test log_10(100) = 2 (since 10^2 = 100)
+    let val_100 = IdleFloat::new(10.0, 2.0); // 10^2 = 100
+    let base_10 = IdleFloat::new(10.0, 1.0); // 10^1 = 10
+    let log_100 = val_100.log(base_10);
+    
+    let result_value_100 = log_100.base.powf(log_100.exponent);
+    assert!((result_value_100 - 2.0).abs() < epsilon, 
+            "log_10(100) should equal 2");
+}
+
+#[test]
+fn test_log_float() {
+    // Test logarithm with Float base
+    let epsilon = 1e-10;
+    
+    // Test log_2(8) = 3 using Float base
+    let val = IdleFloat::new(2.0, 3.0); // 2^3 = 8
+    let log_result = val.log_float(2.0);
+    
+    // Expected: log_2(8) = 3
+    // Result should be e^ln(3) = 3
+    let result_value = log_result.base.powf(log_result.exponent);
+    assert!((result_value - 3.0).abs() < epsilon, 
+            "log_float: log_2(8) should equal 3, got {}", result_value);
+    
+    // Test log_10(1000) = 3 using Float base
+    let val_1000 = IdleFloat::new(10.0, 3.0); // 10^3 = 1000
+    let log_1000 = val_1000.log_float(10.0);
+    
+    let result_value_1000 = log_1000.base.powf(log_1000.exponent);
+    assert!((result_value_1000 - 3.0).abs() < epsilon, 
+            "log_float: log_10(1000) should equal 3");
+    
+    // Test invalid base cases
+    let val = IdleFloat::new(2.0, 2.0);
+    
+    // Base <= 0 should return NaN
+    let log_neg = val.log_float(-2.0);
+    assert!(log_neg.is_nan(), "log with negative base should be NaN");
+    
+    let log_zero_base = val.log_float(0.0);
+    assert!(log_zero_base.is_nan(), "log with zero base should be NaN");
+    
+    // Base = 1 should return NaN
+    let log_one_base = val.log_float(1.0);
+    assert!(log_one_base.is_nan(), "log with base 1 should be NaN");
+    
+    // log of zero should be NaN
+    let zero: IdleFloat<f64> = IdleFloat::zero();
+    let log_of_zero = zero.log_float(10.0);
+    assert!(log_of_zero.is_nan(), "log of zero should be NaN");
+    
+    // log_base(1) should be 0
+    let one: IdleFloat<f64> = IdleFloat::one();
+    let log_of_one = one.log_float(10.0);
+    assert!(log_of_one.is_zero(), "log of one should be zero");
+}
+
+#[test]
+fn test_max_min() {
+    // Test max and min functions
+    let val1 = IdleFloat::new(2.0, 3.0); // 2^3 = 8
+    let val2 = IdleFloat::new(2.0, 2.0); // 2^2 = 4
+    let val3 = IdleFloat::new(3.0, 2.0); // 3^2 = 9
+    
+    // Test max
+    let max_result = val1.max(val2);
+    assert_eq!(max_result, val1, "max(8, 4) should be 8");
+    
+    let max_result2 = val2.max(val3);
+    assert_eq!(max_result2, val3, "max(4, 9) should be 9");
+    
+    // Test min
+    let min_result = val1.min(val2);
+    assert_eq!(min_result, val2, "min(8, 4) should be 4");
+    
+    let min_result2 = val2.min(val3);
+    assert_eq!(min_result2, val2, "min(4, 9) should be 4");
+    
+    // Test with equal values
+    let val_copy = IdleFloat::new(2.0, 3.0);
+    let max_equal = val1.max(val_copy);
+    let min_equal = val1.min(val_copy);
+    assert_eq!(max_equal, val1, "max of equal values should return first value");
+    assert_eq!(min_equal, val1, "min of equal values should return first value");
+    
+    // Test with NaN
+    let nan: IdleFloat<f64> = IdleFloat::nan();
+    let max_nan = val1.max(nan);
+    let min_nan = val1.min(nan);
+    assert!(max_nan.is_nan(), "max with NaN should be NaN");
+    assert!(min_nan.is_nan(), "min with NaN should be NaN");
+}

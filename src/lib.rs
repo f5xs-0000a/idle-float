@@ -17,7 +17,6 @@ use core::{
 use num::{
     Float,
     One,
-    ToPrimitive,
     Zero,
 };
 
@@ -59,8 +58,8 @@ pub struct IdleFloat<F: Float> {
 }
 
 impl<F: Float> Zero for IdleFloat<F> {
+    /// Returns a representation of 0.
     fn zero() -> Self {
-        /// Returns a representation of 0.
         IdleFloat {
             base: F::one().exp(),
             exponent: F::neg_infinity(),
@@ -381,288 +380,6 @@ impl<F: Float> std::ops::Rem<IdleFloat<F>> for IdleFloat<F> {
     }
 }
 
-impl<F: Float> num::Float for IdleFloat<F> {
-    fn nan() -> Self {
-        IdleFloat {
-            base: F::nan(),
-            exponent: F::nan(),
-        }
-    }
-
-    fn infinity() -> Self {
-        unimplemented!()
-    }
-
-    fn neg_infinity() -> Self {
-        unimplemented!()
-    }
-
-    fn neg_zero() -> Self {
-        unimplemented!()
-    }
-
-    fn min_value() -> Self {
-        unimplemented!()
-    }
-
-    fn min_positive_value() -> Self {
-        unimplemented!()
-    }
-
-    fn max_value() -> Self {
-        unimplemented!()
-    }
-
-    fn is_nan(self) -> bool {
-        // TODO: Add more cases for when IdleFloat should be considered NaN
-        // (e.g., invalid base/exponent combinations, mathematical inconsistencies)
-        self.base.is_nan() || self.exponent.is_nan()
-    }
-
-    fn is_infinite(self) -> bool {
-        unimplemented!()
-    }
-
-    fn is_finite(self) -> bool {
-        unimplemented!()
-    }
-
-    fn is_normal(self) -> bool {
-        unimplemented!()
-    }
-
-    fn classify(self) -> std::num::FpCategory {
-        unimplemented!()
-    }
-
-    fn floor(self) -> Self {
-        unimplemented!()
-    }
-
-    fn ceil(self) -> Self {
-        unimplemented!()
-    }
-
-    fn round(self) -> Self {
-        unimplemented!()
-    }
-
-    fn trunc(self) -> Self {
-        unimplemented!()
-    }
-
-    fn fract(self) -> Self {
-        unimplemented!()
-    }
-
-    fn abs(self) -> Self {
-        unimplemented!()
-    }
-
-    fn signum(self) -> Self {
-        unimplemented!()
-    }
-
-    fn is_sign_positive(self) -> bool {
-        unimplemented!()
-    }
-
-    fn is_sign_negative(self) -> bool {
-        unimplemented!()
-    }
-
-    fn mul_add(
-        self,
-        _a: Self,
-        _b: Self,
-    ) -> Self {
-        unimplemented!()
-    }
-
-    fn recip(self) -> Self {
-        unimplemented!()
-    }
-
-    fn powi(
-        self,
-        _n: i32,
-    ) -> Self {
-        unimplemented!()
-    }
-
-    fn powf(
-        self,
-        _n: Self,
-    ) -> Self {
-        unimplemented!()
-    }
-
-    fn sqrt(self) -> Self {
-        unimplemented!()
-    }
-
-    fn exp(self) -> Self {
-        unimplemented!()
-    }
-
-    fn exp2(self) -> Self {
-        unimplemented!()
-    }
-
-    fn ln(self) -> Self {
-        unimplemented!()
-    }
-
-    fn log(
-        self,
-        _base: Self,
-    ) -> Self {
-        unimplemented!()
-    }
-
-    fn log2(self) -> Self {
-        unimplemented!()
-    }
-
-    fn log10(self) -> Self {
-        unimplemented!()
-    }
-
-    fn max(
-        self,
-        _other: Self,
-    ) -> Self {
-        unimplemented!()
-    }
-
-    fn min(
-        self,
-        _other: Self,
-    ) -> Self {
-        unimplemented!()
-    }
-
-    fn abs_sub(
-        self,
-        _other: Self,
-    ) -> Self {
-        unimplemented!()
-    }
-
-    fn cbrt(self) -> Self {
-        unimplemented!()
-    }
-
-    fn hypot(
-        self,
-        _other: Self,
-    ) -> Self {
-        unimplemented!()
-    }
-
-    fn sin(self) -> Self {
-        unimplemented!()
-    }
-
-    fn cos(self) -> Self {
-        unimplemented!()
-    }
-
-    fn tan(self) -> Self {
-        unimplemented!()
-    }
-
-    fn asin(self) -> Self {
-        unimplemented!()
-    }
-
-    fn acos(self) -> Self {
-        unimplemented!()
-    }
-
-    fn atan(self) -> Self {
-        unimplemented!()
-    }
-
-    fn atan2(
-        self,
-        _other: Self,
-    ) -> Self {
-        unimplemented!()
-    }
-
-    fn sin_cos(self) -> (Self, Self) {
-        unimplemented!()
-    }
-
-    fn exp_m1(self) -> Self {
-        unimplemented!()
-    }
-
-    fn ln_1p(self) -> Self {
-        unimplemented!()
-    }
-
-    fn sinh(self) -> Self {
-        unimplemented!()
-    }
-
-    fn cosh(self) -> Self {
-        unimplemented!()
-    }
-
-    fn tanh(self) -> Self {
-        unimplemented!()
-    }
-
-    fn asinh(self) -> Self {
-        unimplemented!()
-    }
-
-    fn acosh(self) -> Self {
-        unimplemented!()
-    }
-
-    fn atanh(self) -> Self {
-        unimplemented!()
-    }
-
-    fn integer_decode(self) -> (u64, i16, i8) {
-        unimplemented!()
-    }
-}
-
-impl<F: Float> std::iter::Sum for IdleFloat<F> {
-    fn sum<I: Iterator<Item = Self>>(_iter: I) -> Self {
-        unimplemented!()
-    }
-}
-
-impl<'a, F: Float> std::iter::Sum<&'a Self> for IdleFloat<F> {
-    fn sum<I: Iterator<Item = &'a Self>>(_iter: I) -> Self {
-        unimplemented!()
-    }
-}
-
-impl<F: Float> ToPrimitive for IdleFloat<F> {
-    fn to_i64(&self) -> Option<i64> {
-        unimplemented!()
-    }
-
-    fn to_u64(&self) -> Option<u64> {
-        unimplemented!()
-    }
-
-    fn to_f64(&self) -> Option<f64> {
-        unimplemented!()
-    }
-}
-
-impl<F: Float> num::NumCast for IdleFloat<F> {
-    fn from<T: num::ToPrimitive>(_n: T) -> Option<Self> {
-        unimplemented!()
-    }
-}
 
 impl<F: Float> IdleFloat<F> {
     /// Creates a new IdleFloat with the given base and exponent.
@@ -675,6 +392,214 @@ impl<F: Float> IdleFloat<F> {
         IdleFloat {
             base,
             exponent,
+        }
+    }
+
+    /// Returns `NaN`.
+    pub fn nan() -> Self {
+        IdleFloat {
+            base: F::nan(),
+            exponent: F::nan(),
+        }
+    }
+
+    /// Returns positive infinity.
+    pub fn infinity() -> Self {
+        IdleFloat {
+            base: F::one().exp(), // e
+            exponent: F::infinity(),
+        }
+    }
+
+    /// Checks if this `IdleFloat` is `NaN`.
+    pub fn is_nan(self) -> bool {
+        self.base.is_nan() || self.exponent.is_nan()
+    }
+
+    /// Returns the minimum positive value representable.
+    pub fn min_positive_value() -> Self {
+        IdleFloat {
+            base: F::one() + F::min_positive_value(),
+            exponent: -F::max_value(),
+        }
+    }
+
+    /// Returns the maximum finite value representable.
+    pub fn max_value() -> Self {
+        IdleFloat {
+            base: F::max_value(),
+            exponent: F::max_value(),
+        }
+    }
+
+    /// Classify this `IdleFloat` number.
+    /// Note: There are no `Subnormal` values in `IdleFloat` representation.
+    pub fn classify(self) -> std::num::FpCategory {
+        if self.is_nan() {
+            std::num::FpCategory::Nan
+        }
+
+        else if self.is_zero() {
+            std::num::FpCategory::Zero
+        }
+
+        else if self.exponent.is_infinite() && self.exponent.is_sign_positive() {
+            std::num::FpCategory::Infinite
+        }
+
+        else {
+            std::num::FpCategory::Normal
+        }
+    }
+
+    /// Returns the reciprocal of this `IdleFloat`.
+    pub fn recip(self) -> Self {
+        if self.is_zero() {
+            return Self::infinity();
+        }
+        if self.is_nan() {
+            return self;
+        }
+
+        IdleFloat {
+            base: self.base,
+            exponent: -self.exponent,
+        }
+    }
+
+    /// Returns the square root of this `IdleFloat`.
+    pub fn sqrt(self) -> Self {
+        if self.is_zero() || self.is_nan() {
+            return self;
+        }
+
+        IdleFloat {
+            base: self.base,
+            exponent: self.exponent / (F::one() + F::one()),
+        }
+    }
+
+    /// Returns `e^x` where `x` is this `IdleFloat`.
+    pub fn exp(self) -> Self {
+        if self.is_nan() {
+            return self;
+        }
+
+        if self.is_zero() {
+            return Self::one();
+        }
+
+        let e_base = F::one().exp();
+        let converted = self.change_base(e_base);
+
+        IdleFloat {
+            base: e_base,
+            exponent: e_base.powf(converted.exponent),
+        }
+    }
+
+    /// Returns the natural logarithm of this `IdleFloat`.
+    pub fn ln(self) -> Self {
+        if self.is_nan() || self.is_zero() {
+            return Self::nan();
+        }
+
+        if self.is_one() {
+            return Self::zero();
+        }
+
+        let ln_result = self.exponent * self.base.ln();
+        
+        IdleFloat {
+            base: F::one().exp(), // e
+            exponent: ln_result,
+        }
+    }
+
+    /// Returns the logarithm of this `IdleFloat` with the specified base.
+    pub fn log(self, base: Self) -> Self {
+        if self.is_nan() || base.is_nan() {
+            return Self::nan();
+        }
+        
+        if self.is_zero() || base.is_zero() {
+            return Self::nan();
+        }
+        
+        if self.is_one() {
+            return Self::zero();
+        }
+        
+        if base.is_one() {
+            return Self::nan();
+        }
+
+        let self_ln = self.exponent * self.base.ln();
+        let base_ln = base.exponent * base.base.ln();
+        let log_result = self_ln / base_ln;
+        
+        // Return IdleFloat representing the value log_result
+        if log_result > F::zero() {
+            IdleFloat {
+                base: F::one().exp(), // e
+                exponent: log_result.ln(), // ln(log_result)
+            }
+        } else {
+            Self::nan()
+        }
+    }
+
+    /// Returns the logarithm of this `IdleFloat` with the specified base as a
+    /// `Float`.
+    pub fn log_float(self, base: F) -> Self {
+        if self.is_nan() || base.is_nan() || base <= F::zero() || base == F::one() {
+            return Self::nan();
+        }
+        
+        if self.is_zero() {
+            return Self::nan();
+        }
+        
+        if self.is_one() {
+            return Self::zero();
+        }
+
+        let log_result = (self.exponent * self.base.ln()) / base.ln();
+        
+        // Return IdleFloat representing the value log_result
+        if log_result > F::zero() {
+            IdleFloat {
+                base: F::one().exp(), // e
+                exponent: log_result.ln(), // ln(log_result)
+            }
+        } else {
+            Self::nan()
+        }
+    }
+
+    /// Returns the maximum of two `IdleFloat` values.
+    pub fn max(self, other: Self) -> Self {
+        if self.is_nan() || other.is_nan() {
+            return Self::nan();
+        }
+
+        match self.partial_cmp(&other) {
+            Some(Greater) | Some(Equal) => self,
+            Some(Less) => other,
+            None => Self::nan(),
+        }
+    }
+
+    /// Returns the minimum of two `IdleFloat` values.
+    pub fn min(self, other: Self) -> Self {
+        if self.is_nan() || other.is_nan() {
+            return Self::nan();
+        }
+
+        match self.partial_cmp(&other) {
+            Some(Less) | Some(Equal) => self,
+            Some(Greater) => other,
+            None => Self::nan(),
         }
     }
 
@@ -747,3 +672,17 @@ impl<F: Float> IdleFloat<F> {
         }
     }
 }
+
+/*
+#[derive(Debug, Clone, Hash)]
+pub enum DisplayFormat(
+    Scientific,
+    Exponential,
+    Engineer,
+);
+
+pub struct DelayedFormat<'a> {
+    num: &'a IdleFloat,
+    format: DisplayFormat,
+};
+*/
