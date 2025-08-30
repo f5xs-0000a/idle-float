@@ -24,6 +24,15 @@ use num::{
 /// be done in a series, as provided using an implementation of `std::iter::Sum`
 /// for this struct.
 ///
+/// # Base Constraints
+///
+/// For optimal behavior in incremental games, bases should typically be greater
+/// than 1. This ensures that larger exponents always represent larger values,
+/// which aligns with the exponential growth expected in incremental games where
+/// values explode towards infinity. While mathematically valid, bases between 0
+/// and 1 would cause values to decrease as exponents increase, which is contrary
+/// to the typical use case.
+///
 /// # Coercion
 ///
 /// Numerical operations involving IdleFloats with different bases will result
@@ -43,6 +52,7 @@ pub struct IdleFloat<F: Float> {
 
 impl<F: Float> Zero for IdleFloat<F> {
     fn zero() -> Self {
+        /// Returns a representation of 0.
         IdleFloat {
             base: F::one().exp(),
             exponent: F::neg_infinity(),
@@ -58,6 +68,7 @@ impl<F: Float> Zero for IdleFloat<F> {
 }
 
 impl<F: Float> One for IdleFloat<F> {
+    /// Returns a representation of 1.
     fn one() -> Self {
         IdleFloat {
             base: F::one().exp(),
