@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 
 use num::{
     Float,
+    Num,
     One,
     Zero,
 };
@@ -144,4 +145,43 @@ fn test_mathematical_consistency() {
     // Test that 2^2 = 4 < 3^2 = 9
     let c = IdleFloat::new(2.0, 2.0);
     assert!(c < b);
+}
+
+#[test]
+fn test_from_str_radix() {
+    // Test parsing zero
+    let zero: IdleFloat<f64> = IdleFloat::from_str_radix("0", 10).unwrap();
+    assert!(zero.is_zero());
+
+    // Test parsing one
+    let one: IdleFloat<f64> = IdleFloat::from_str_radix("1", 10).unwrap();
+    assert!(one.is_one());
+
+    // Test parsing positive numbers
+    let two: IdleFloat<f64> = IdleFloat::from_str_radix("2", 10).unwrap();
+    let expected_two = IdleFloat::new(std::f64::consts::E, 2.0_f64.ln());
+    assert_eq!(two, expected_two);
+
+    let ten: IdleFloat<f64> = IdleFloat::from_str_radix("10", 10).unwrap();
+    let expected_ten = IdleFloat::new(std::f64::consts::E, 10.0_f64.ln());
+    assert_eq!(ten, expected_ten);
+
+    // Test parsing with different radix
+    let fifteen_hex: IdleFloat<f64> =
+        IdleFloat::from_str_radix("F", 16).unwrap();
+    let expected_fifteen = IdleFloat::new(std::f64::consts::E, 15.0_f64.ln());
+    assert_eq!(fifteen_hex, expected_fifteen);
+
+    // Test parsing negative numbers (should return NaN)
+    let negative: IdleFloat<f64> = IdleFloat::from_str_radix("-5", 10).unwrap();
+    assert!(negative.is_nan());
+
+    // Test parsing invalid strings (should return error)
+    let invalid = IdleFloat::<f64>::from_str_radix("abc", 10);
+    assert!(invalid.is_err());
+
+    // Test parsing fractional numbers
+    let half: IdleFloat<f64> = IdleFloat::from_str_radix("0.5", 10).unwrap();
+    let expected_half = IdleFloat::new(std::f64::consts::E, 0.5_f64.ln());
+    assert_eq!(half, expected_half);
 }

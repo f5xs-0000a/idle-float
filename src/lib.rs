@@ -171,10 +171,35 @@ impl<F: Float> num::Num for IdleFloat<F> {
     type FromStrRadixErr = ();
 
     fn from_str_radix(
-        _str: &str,
-        _radix: u32,
+        str: &str,
+        radix: u32,
     ) -> Result<Self, Self::FromStrRadixErr> {
-        unimplemented!()
+        let parsed_float = F::from_str_radix(str, radix).map_err(|_| ())?;
+
+        if parsed_float.is_nan() {
+            return Ok(Self::nan());
+        }
+
+        if parsed_float.is_zero() {
+            return Ok(Self::zero());
+        }
+
+        if parsed_float == F::one() {
+            return Ok(Self::one());
+        }
+
+        // for positive numbers, represent as e^ln(number)
+        if F::zero() < parsed_float {
+            let ln_value = parsed_float.ln();
+
+            if ln_value.is_finite() {
+                return Ok(IdleFloat::new(F::one().exp(), ln_value));
+            }
+        }
+
+        // for negative numbers or other invalid cases, return `NaN` since
+        // `IdleFloat` represents only non-negative numbers
+        Ok(Self::nan())
     }
 }
 
