@@ -1,0 +1,389 @@
+use num::{Float, ToPrimitive};
+
+/// An implementation of a floating type number designed for incremental games.
+///
+/// # Representation
+///
+/// This crate is able to represent numbers from 0 up to `b^f64::max` where
+/// `b` is any base you want. However, at the cost of this, while multiplication
+/// and exponentiation are easier to represent, addition becomes much more
+/// expensive to compute. This can be mitigated if the addition of numbers can
+/// be done in a series, as provided using an implementation of `std::iter::Sum`
+/// for this struct.
+///
+/// # Coercion
+///
+/// Numerical operations involving IdleFloats with different bases will result
+/// into implicit coercion of the base into the larger base. That means
+/// `f(a^b, c^d) = max(a, c)^F(b, d)`.
+///
+/// It is highly advised to avoid implicit coercion at all costs by keeping the
+/// base as consistent as possible.
+///
+/// By default, the base is set to `e`, as it is when evaluating `zero()` or
+/// `one()`.
+#[derive(Debug, Clone, Copy)]
+struct IdleFloat<F: Float> {
+    base: F,
+    exponent: F,
+}
+
+impl<F: Float> num::Zero for IdleFloat<F> {
+    fn zero() -> Self {
+        IdleFloat {
+            base: F::one().exp(),
+            exponent: F::neg_infinity(),
+        }
+    }
+
+    fn is_zero(&self) -> bool {
+        !self.base.is_nan() &&
+            F::one() < self.base &&
+            self.exponent.is_infinite() &&
+            self.exponent.is_sign_negative()
+    }
+}
+
+impl<F: Float> num::One for IdleFloat<F> {
+    fn one() -> Self {
+        IdleFloat {
+            base: F::one().exp(),
+            exponent: F::zero(),
+        }
+    }
+
+    fn is_one(&self) -> bool {
+        self.exponent.is_infinite() && self.exponent.is_sign_negative()
+    }
+}
+
+impl<F: Float> PartialEq for IdleFloat<F> {
+    fn eq(&self, _other: &Self) -> bool {
+        unimplemented!()
+    }
+}
+
+impl<F: Float> PartialOrd for IdleFloat<F> {
+    fn partial_cmp(&self, _other: &Self) -> Option<std::cmp::Ordering> {
+        unimplemented!()
+    }
+}
+
+impl<F: Float> std::ops::Neg for IdleFloat<F> {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Self::nan()
+    }
+}
+
+impl<F: Float> num::Num for IdleFloat<F> {
+    type FromStrRadixErr = ();
+
+    fn from_str_radix(_str: &str, _radix: u32) -> Result<Self, Self::FromStrRadixErr> {
+        unimplemented!()
+    }
+}
+
+
+impl<F: Float> std::ops::Add<IdleFloat<F>> for IdleFloat<F> {
+    type Output = IdleFloat<F>;
+
+    fn add(self, _rhs: IdleFloat<F>) -> Self::Output {
+        unimplemented!()
+    }
+}
+
+impl<F: Float> std::ops::Sub<IdleFloat<F>> for IdleFloat<F> {
+    type Output = IdleFloat<F>;
+
+    fn sub(self, _rhs: IdleFloat<F>) -> Self::Output {
+        unimplemented!()
+    }
+}
+
+impl<F: Float> std::ops::Mul<IdleFloat<F>> for IdleFloat<F> {
+    type Output = IdleFloat<F>;
+
+    fn mul(self, _rhs: IdleFloat<F>) -> Self::Output {
+        unimplemented!()
+    }
+}
+
+impl<F: Float> std::ops::Div<IdleFloat<F>> for IdleFloat<F> {
+    type Output = IdleFloat<F>;
+
+    fn div(self, _rhs: IdleFloat<F>) -> Self::Output {
+        unimplemented!()
+    }
+}
+
+impl<F: Float> std::ops::Rem<IdleFloat<F>> for IdleFloat<F> {
+    type Output = IdleFloat<F>;
+
+    fn rem(self, _rhs: IdleFloat<F>) -> Self::Output {
+        unimplemented!()
+    }
+}
+
+impl<F: Float> num::Float for IdleFloat<F> {
+    fn nan() -> Self {
+        IdleFloat {
+            base: F::nan(),
+            exponent: F::nan(),
+        }
+    }
+
+    fn infinity() -> Self {
+        unimplemented!()
+    }
+
+    fn neg_infinity() -> Self {
+        unimplemented!()
+    }
+
+    fn neg_zero() -> Self {
+        unimplemented!()
+    }
+
+    fn min_value() -> Self {
+        unimplemented!()
+    }
+
+    fn min_positive_value() -> Self {
+        unimplemented!()
+    }
+
+    fn max_value() -> Self {
+        unimplemented!()
+    }
+
+    fn is_nan(self) -> bool {
+        unimplemented!()
+    }
+
+    fn is_infinite(self) -> bool {
+        unimplemented!()
+    }
+
+    fn is_finite(self) -> bool {
+        unimplemented!()
+    }
+
+    fn is_normal(self) -> bool {
+        unimplemented!()
+    }
+
+    fn classify(self) -> std::num::FpCategory {
+        unimplemented!()
+    }
+
+    fn floor(self) -> Self {
+        unimplemented!()
+    }
+
+    fn ceil(self) -> Self {
+        unimplemented!()
+    }
+
+    fn round(self) -> Self {
+        unimplemented!()
+    }
+
+    fn trunc(self) -> Self {
+        unimplemented!()
+    }
+
+    fn fract(self) -> Self {
+        unimplemented!()
+    }
+
+    fn abs(self) -> Self {
+        unimplemented!()
+    }
+
+    fn signum(self) -> Self {
+        unimplemented!()
+    }
+
+    fn is_sign_positive(self) -> bool {
+        unimplemented!()
+    }
+
+    fn is_sign_negative(self) -> bool {
+        unimplemented!()
+    }
+
+    fn mul_add(self, _a: Self, _b: Self) -> Self {
+        unimplemented!()
+    }
+
+    fn recip(self) -> Self {
+        unimplemented!()
+    }
+
+    fn powi(self, _n: i32) -> Self {
+        unimplemented!()
+    }
+
+    fn powf(self, _n: Self) -> Self {
+        unimplemented!()
+    }
+
+    fn sqrt(self) -> Self {
+        unimplemented!()
+    }
+
+    fn exp(self) -> Self {
+        unimplemented!()
+    }
+
+    fn exp2(self) -> Self {
+        unimplemented!()
+    }
+
+    fn ln(self) -> Self {
+        unimplemented!()
+    }
+
+    fn log(self, _base: Self) -> Self {
+        unimplemented!()
+    }
+
+    fn log2(self) -> Self {
+        unimplemented!()
+    }
+
+    fn log10(self) -> Self {
+        unimplemented!()
+    }
+
+    fn max(self, _other: Self) -> Self {
+        unimplemented!()
+    }
+
+    fn min(self, _other: Self) -> Self {
+        unimplemented!()
+    }
+
+    fn abs_sub(self, _other: Self) -> Self {
+        unimplemented!()
+    }
+
+    fn cbrt(self) -> Self {
+        unimplemented!()
+    }
+
+    fn hypot(self, _other: Self) -> Self {
+        unimplemented!()
+    }
+
+    fn sin(self) -> Self {
+        unimplemented!()
+    }
+
+    fn cos(self) -> Self {
+        unimplemented!()
+    }
+
+    fn tan(self) -> Self {
+        unimplemented!()
+    }
+
+    fn asin(self) -> Self {
+        unimplemented!()
+    }
+
+    fn acos(self) -> Self {
+        unimplemented!()
+    }
+
+    fn atan(self) -> Self {
+        unimplemented!()
+    }
+
+    fn atan2(self, _other: Self) -> Self {
+        unimplemented!()
+    }
+
+    fn sin_cos(self) -> (Self, Self) {
+        unimplemented!()
+    }
+
+    fn exp_m1(self) -> Self {
+        unimplemented!()
+    }
+
+    fn ln_1p(self) -> Self {
+        unimplemented!()
+    }
+
+    fn sinh(self) -> Self {
+        unimplemented!()
+    }
+
+    fn cosh(self) -> Self {
+        unimplemented!()
+    }
+
+    fn tanh(self) -> Self {
+        unimplemented!()
+    }
+
+    fn asinh(self) -> Self {
+        unimplemented!()
+    }
+
+    fn acosh(self) -> Self {
+        unimplemented!()
+    }
+
+    fn atanh(self) -> Self {
+        unimplemented!()
+    }
+
+    fn integer_decode(self) -> (u64, i16, i8) {
+        unimplemented!()
+    }
+}
+
+impl<F: Float> std::iter::Sum for IdleFloat<F> {
+    fn sum<I: Iterator<Item = Self>>(_iter: I) -> Self {
+        unimplemented!()
+    }
+}
+
+impl<'a, F: Float> std::iter::Sum<&'a Self> for IdleFloat<F> {
+    fn sum<I: Iterator<Item = &'a Self>>(_iter: I) -> Self {
+        unimplemented!()
+    }
+}
+
+impl<F: Float> ToPrimitive for IdleFloat<F> {
+    fn to_i64(&self) -> Option<i64> {
+        unimplemented!()
+    }
+
+    fn to_u64(&self) -> Option<u64> {
+        unimplemented!()
+    }
+
+    fn to_f64(&self) -> Option<f64> {
+        unimplemented!()
+    }
+}
+
+impl<F: Float> num::NumCast for IdleFloat<F> {
+    fn from<T: num::ToPrimitive>(_n: T) -> Option<Self> {
+        unimplemented!()
+    }
+}
+
+impl<F: Float> IdleFloat<F> {
+    /// Changes the base of this number.
+    ///
+    /// Read the section about coercion for the warning about changing bases.
+    fn change_base(&self) -> IdleFloat<F> {
+        unimplemented!()
+    }
+}
