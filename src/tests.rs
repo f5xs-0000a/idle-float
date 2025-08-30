@@ -261,3 +261,161 @@ fn test_is_one_various_bases() {
     let zero: IdleFloat<f64> = IdleFloat::zero();
     assert!(!zero.is_one());
 }
+
+#[test]
+fn test_sub_positive_values_close_to_one() {
+    // Test subtraction with positive values close to 1
+    // Using e as base for consistency (default base)
+    let base = std::f64::consts::E;
+
+    // Create values close to 1: e^0.1 ≈ 1.105 and e^0.05 ≈ 1.051
+    let larger = IdleFloat::new(base, 0.1); // e^0.1
+    let smaller = IdleFloat::new(base, 0.05); // e^0.05
+
+    // Expected result: e^0.1 - e^0.05 ≈ 1.105 - 1.051 = 0.054
+    // In IdleFloat form: e^ln(0.054) ≈ e^(-2.919)
+    let result = larger - smaller;
+
+    // Since we're dealing with floating point arithmetic, we need an epsilon for comparison
+    let epsilon = 1e-10;
+
+    // Convert both values to f64 for easier comparison
+    // Expected: e^0.1 - e^0.05 = e^0.05 * (e^0.05 - 1) ≈ 1.051 * 0.051 ≈ 0.054
+    let expected_value = base.powf(0.1) - base.powf(0.05);
+    let expected = IdleFloat::new(base, expected_value.ln());
+
+    // Check that the result is close to expected within epsilon
+    // Since we can't directly compare IdleFloat values with epsilon,
+    // we'll compare the actual mathematical values they represent
+    let result_value = result.base.powf(result.exponent);
+    let expected_mathematical_value = expected_value;
+
+    assert!(
+        (result_value - expected_mathematical_value).abs() < epsilon,
+        "Subtraction result {:.10} should be close to expected {:.10} within \
+         epsilon {:.10}",
+        result_value,
+        expected_mathematical_value,
+        epsilon
+    );
+
+    // Also test that the result is positive and reasonable
+    assert!(!result.is_zero(), "Result should not be zero");
+    assert!(!result.is_nan(), "Result should not be NaN");
+    assert!(result_value > 0.0, "Result should be positive");
+    assert!(
+        result_value < 1.0,
+        "Result should be less than 1 (since we subtracted from a value > 1)"
+    );
+}
+
+#[test]
+fn test_sub_big_numbers() {
+    // Test subtraction with large numbers: e^100 - e^99
+    // This tests the LogSumExp implementation for large exponents
+    let base = std::f64::consts::E;
+    let epsilon = 1e-10;
+
+    let big1 = IdleFloat::new(base, 100.0); // e^100
+    let big2 = IdleFloat::new(base, 99.0); // e^99
+
+    // Expected: e^100 - e^99 = e^99 * (e - 1) ≈ e^99 * 1.718
+    // Result should be approximately e^(99 + ln(e-1)) = e^(99 + ln(1.718))
+    let result = big1 - big2;
+
+    // Mathematical verification: e^100 - e^99 = e^99 * (e - 1)
+    let e_minus_1 = base - 1.0;
+    let expected_exponent = 99.0 + e_minus_1.ln();
+    let expected = IdleFloat::new(base, expected_exponent);
+
+    // Compare the exponents since the numbers are too large for direct comparison
+    let result_exp = result.exponent;
+    let expected_exp = expected.exponent;
+
+    assert!(
+        (result_exp - expected_exp).abs() < epsilon,
+        "Big number subtraction result exponent {:.10} should be close to \
+         expected {:.10} within epsilon {:.10}",
+        result_exp,
+        expected_exp,
+        epsilon
+    );
+
+    assert!(!result.is_zero(), "Result should not be zero");
+    assert!(!result.is_nan(), "Result should not be NaN");
+}
+
+#[test]
+fn test_sub_very_big_minus_very_small() {
+    // Test: very big number - very small number ≈ very big number
+    // e^1000 - e^(-10) should be approximately e^1000
+    let base = std::f64::consts::E;
+    let epsilon = 1e-10;
+
+    let very_big = IdleFloat::new(base, 1000.0); // e^1000
+    let very_small = IdleFloat::new(base, -10.0); // e^(-10)
+
+    let result = very_big - very_small;
+
+    // When subtracting a very small number from a very large number,
+    // the result should be approximately the large number
+    // Since e^1000 >> e^(-10), the result should be very close to e^1000
+
+    // The LogSumExp algorithm should handle this gracefully
+    // Expected: e^1000 * (1 - e^(-1010)) ≈ e^1000 (since e^(-1010) ≈ 0)
+    let expected_exponent = 1000.0 + (1.0 - (-1010.0_f64).exp()).ln();
+
+    // Since e^(-1010) is essentially 0, ln(1 - 0) = ln(1) = 0
+    // So expected_exponent should be very close to 1000.0
+    assert!(
+        (result.exponent - 1000.0).abs() < epsilon,
+        "Very big minus very small should be approximately the big number. \
+         Got exponent {:.10}, expected ~1000.0",
+        result.exponent
+    );
+
+    assert!(!result.is_zero(), "Result should not be zero");
+    assert!(!result.is_nan(), "Result should not be NaN");
+    assert!(result.exponent > 999.0, "Result should still be very large");
+}
+
+#[test]
+fn test_sub_small_minus_big_gives_nan() {
+    // Test: small number - big number should give NaN
+    // Since IdleFloat represents only non-negative numbers, negative results are invalid
+    // e^(-10) - e^100 should result in NaN
+    let base = std::f64::consts::E;
+
+    let small = IdleFloat::new(base, -10.0); // e^(-10) ≈ 0.000045
+    let big = IdleFloat::new(base, 100.0); // e^100 (huge number)
+
+    let result = small - big;
+
+    // Since IdleFloat only represents non-negative numbers,
+    // any subtraction that would result in a negative value should return NaN
+    assert!(
+        result.is_nan(),
+        "Small minus big should result in NaN since IdleFloat cannot \
+         represent negative numbers"
+    );
+
+    // Test with another case: e^5 - e^10
+    let smaller = IdleFloat::new(base, 5.0); // e^5 ≈ 148
+    let bigger = IdleFloat::new(base, 10.0); // e^10 ≈ 22026
+
+    let result2 = smaller - bigger;
+    assert!(
+        result2.is_nan(),
+        "Smaller minus bigger should result in NaN"
+    );
+
+    // Test edge case: same base, smaller exponent minus larger exponent
+    let a = IdleFloat::new(base, 1.0); // e^1 ≈ 2.718
+    let b = IdleFloat::new(base, 2.0); // e^2 ≈ 7.389
+
+    let result3 = a - b;
+    assert!(
+        result3.is_nan(),
+        "Any subtraction resulting in negative should be NaN"
+    );
+}

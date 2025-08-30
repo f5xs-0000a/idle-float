@@ -219,9 +219,29 @@ impl<F: Float> std::ops::Sub<IdleFloat<F>> for IdleFloat<F> {
 
     fn sub(
         self,
-        _rhs: IdleFloat<F>,
+        rhs: IdleFloat<F>,
     ) -> Self::Output {
-        unimplemented!()
+        // coerce bases to equalize first
+        match self.base.partial_cmp(&rhs.base) {
+            Some(Equal) => {}, // pass-through,
+            Some(Less) => return self.change_base(rhs.base).sub(rhs),
+            Some(Greater) => return self.sub(rhs.change_base(self.base)),
+            None => return Self::nan(),
+        }
+
+        // perform LogSumExp
+        let base = self.base;
+        let max = self.exponent.max(rhs.exponent);
+        let self_exp_less = self.exponent - max;
+        let rhs_exp_less = rhs.exponent - max;
+
+        let me = base.powf(self_exp_less) - base.powf(rhs_exp_less);
+        let lme = me.log(base);
+
+        IdleFloat {
+            base,
+            exponent: lme + max,
+        }
     }
 }
 
@@ -557,8 +577,70 @@ impl<F: Float> IdleFloat<F> {
 
     /// Changes the base of this number.
     ///
+    /// Converts from `old_base^old_exponent` to `new_base^new_exponent` while
+    /// preserving the same mathematical value.
+    ///
+    /// # Special Cases
+    ///
+    /// - if the current value is zero, returns zero with the new base
+    /// - if the current value is one, returns one with the new base
+    /// - if the new base is invalid (≤ 0 or NaN), returns NaN
+    /// - if conversion would result in invalid exponent, returns NaN
+    ///
     /// Read the section about coercion for the warning about changing bases.
-    const fn change_base(&self) -> IdleFloat<F> {
-        unimplemented!()
+    pub fn change_base(
+        &self,
+        new_base: F,
+    ) -> IdleFloat<F> {
+        if self.is_nan() {
+            return Self::nan();
+        }
+
+        if new_base.is_nan() || new_base <= F::zero() {
+            return Self::nan();
+        }
+
+        if self.is_zero() {
+            return IdleFloat {
+                base: new_base,
+                exponent: F::neg_infinity(),
+            };
+        }
+
+        if self.is_one() {
+            return IdleFloat {
+                base: new_base,
+                exponent: F::zero(),
+            };
+        }
+
+        // ff bases are the same, no conversion needed
+        if self.base == new_base {
+            return *self;
+        }
+
+        // convert using the logarithmic law for changing bases
+        let ln_old_base = self.base.ln();
+        let ln_new_base = new_base.ln();
+
+        // check for invalid logarithms
+        if !ln_old_base.is_finite()
+            || !ln_new_base.is_finite()
+            || ln_new_base == F::zero()
+        {
+            return Self::nan();
+        }
+
+        let new_exponent = self.exponent * ln_old_base / ln_new_base;
+
+        // check if the new exponent is valid
+        if !new_exponent.is_finite() {
+            return Self::nan();
+        }
+
+        IdleFloat {
+            base: new_base,
+            exponent: new_exponent,
+        }
     }
 }
